@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金句与书摘排版海报生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+        /* 预设颜色按钮 */
+        .color-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            border: 2px solid transparent;
+        }
+        .color-swatch:hover {
+            transform: scale(1.15);
+        }
+        .color-swatch.active {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99,102,241,0.3);
+        }
+
+        /* 画布样式 */
+        #canvas {
+            width: 450px;
+            height: 600px;
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+        }
+
+        #canvas-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #canvas-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 48px;
+            box-sizing: border-box;
+        }
+
+        #quote-text {
+            text-align: center;
+            line-height: 2;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        #quote-source {
+            position: absolute;
+            bottom: 40px;
+            right: 48px;
+            font-size: 13px;
+            opacity: 0.7;
+            z-index: 2;
+        }
+
+        /* 滑块美化 */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #6366f1;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* 文件上传按钮 */
+        .upload-btn {
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .upload-btn input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* 导出按钮 */
+        .export-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            transition: all 0.2s ease;
+        }
+        .export-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+        }
+        .export-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- 主容器 -->
+    <div class="flex min-h-screen">
+
+        <!-- 左侧控制台 -->
+        <div class="w-[380px] bg-white border-r border-gray-100 p-8 overflow-y-auto flex-shrink-0">
+            <h1 class="text-xl font-bold text-gray-800 mb-1">海报生成器</h1>
+            <p class="text-xs text-gray-400 mb-8">金句 · 书摘 · 排版卡片</p>
+
+            <!-- 文本输入 -->
+            <section class="mb-8">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">文本内容</label>
+                <textarea
+                    id="inputQuote"
+                    rows="4"
+                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition placeholder-gray-300"
+                    placeholder="在此输入你喜爱的句子..."
+                >你要做一个不动声色的大人了。不准情绪化，不准偷偷想念，不准回头看。</textarea>
+                <input
+                    id="inputSource"
+                    type="text"
+                    class="w-full mt-3 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition placeholder-gray-300"
+                    placeholder="作者 / 书名"
+                    value="—— 村上春树"
+                />
+            </section>
+
+            <!-- 背景设置 -->
+            <section class="mb-8">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">背景</label>
+                <div class="flex items-center gap-2 flex-wrap mb-3">
+                    <div class="color-swatch active" style="background:#1a1a2e" data-color="#1a1a2e" onclick="setBgColor(this)"></div>
+                    <div class="color-swatch" style="background:#f5f0e8" data-color="#f5f0e8" onclick="setBgColor(this)"></div>
+                    <div class="color-swatch" style="background:#0f3d3e" data-color="#0f3d3e" onclick="setBgColor(this)"></div>
+                    <div class="color-swatch" style="background:#3d0c11" data-color="#3d0c11" onclick="setBgColor(this)"></div>
+                    <div class="color-swatch" style="background:#1b1b3a" data-color="#1b1b3a" onclick="setBgColor(this)"></div>
+                    <div class="color-swatch" style="background:#fafafa" data-color="#fafafa" onclick="setBgColor(this)"></div>
+                    <div class="color-swatch" style="background:#2c3e50" data-color="#2c3e50" onclick="setBgColor(this)"></div>
+                    <div class="color-swatch" style="background:#f8e8d4" data-color="#f8e8d4" onclick="setBgColor(this)"></div>
+                </div>
+                <div class="upload-btn inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs text-gray-600 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    上传背景图片
+                    <input type="file" id="bgImageInput" accept="image/*" onchange="handleBgImage(event)">
+                </div>
+                <button id="clearBgBtn" class="hidden ml-2 px-3 py-2 bg-red-50 hover:bg-red-100 rounded-lg text-xs text-red-500 transition" onclick="clearBgImage()">清除图片</button>
+            </section>
+
+            <!-- 字体设置 -->
+            <section class="mb-8">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">字体</label>
+
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-gray-400">字号</span>
+                        <span id="fontSizeValue" class="text-xs text-indigo-500 font-mono">24px</span>
+                    </div>
+                    <input
+                        id="fontSizeSlider"
+                        type="range"
+                        min="16"
+                        max="40"
+                        value="24"
+                        class="w-full"
+                        oninput="updatePreview()"
+                    />
+                </div>
+
+                <div class="mb-4">
+                    <span class="text-xs text-gray-400 block mb-2">字体族</span>
+                    <select
+                        id="fontFamilySelect"
+                        class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition appearance-none"
+                        onchange="updatePreview()"
+                    >
+                        <option value="'Noto Serif SC', STSong, SimSun, serif">衬线体 Serif</option>
+                        <option value="'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" selected>无衬线体 Sans</option>
+                        <option value="STKaiti, KaiTi, 'AR PL KaitiM GB', serif">楷体 KaiTi</option>
+                        <option value="STSong, SimSun, 'AR PL SungtiL GB', serif">宋体 SongTi</option>
+                    </select>
+                </div>
+
+                <div>
+                    <span class="text-xs text-gray-400 block mb-2">文字颜色</span>
+                    <div class="flex items-center gap-3">
+                        <input
+                            id="fontColorPicker"
+                            type="color"
+                            value="#ffffff"
+                            class="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                            oninput="updatePreview()"
+                        />
+                        <span id="fontColorHex" class="text-xs font-mono text-gray-400">#ffffff</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 导出按钮 -->
+            <button
+                class="export-btn w-full py-3.5 text-white text-sm font-semibold rounded-xl"
+                onclick="exportPoster()"
+            >
+                导出海报 PNG
+            </button>
+            <p class="text-center text-xs text-gray-300 mt-3">高清 2x 分辨率输出</p>
+        </div>
+
+        <!-- 右侧预览区 -->
+        <div class="flex-1 flex items-center justify-center bg-gray-100 p-8">
+            <div
+                id="canvas"
+                class="rounded-2xl shadow-2xl"
+                style="background-color: #1a1a2e; background-size: cover; background-position: center;"
+            >
+                <div id="canvas-overlay"></div>
+                <div id="canvas-content">
+                    <p id="quote-text" style="font-size:24px; color:#ffffff; font-family:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;">
+                        你要做一个不动声色的大人了。不准情绪化，不准偷偷想念，不准回头看。
+                    </p>
+                </div>
+                <p id="quote-source" style="color:#ffffff;">—— 村上春树</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 状态 ==========
+        let hasCustomBg = false;
+
+        // ========== 实时预览 ==========
+        function updatePreview() {
+            const canvas = document.getElementById('canvas');
+            const quoteText = document.getElementById('quote-text');
+            const quoteSource = document.getElementById('quote-source');
+            const fontSize = document.getElementById('fontSizeSlider').value;
+            const fontFamily = document.getElementById('fontFamilySelect').value;
+            const fontColor = document.getElementById('fontColorPicker').value;
+            const quoteValue = document.getElementById('inputQuote').value;
+            const sourceValue = document.getElementById('inputSource').value;
+
+            // 更新文本
+            quoteText.textContent = quoteValue || '';
+            quoteSource.textContent = sourceValue || '';
+
+            // 更新字体样式
+            quoteText.style.fontSize = fontSize + 'px';
+            quoteText.style.fontFamily = fontFamily;
+            quoteText.style.color = fontColor;
+            quoteSource.style.color = fontColor;
+
+            // 更新显示值
+            document.getElementById('fontSizeValue').textContent = fontSize + 'px';
+            document.getElementById('fontColorHex').textContent = fontColor;
+        }
+
+        // ========== 背景纯色 ==========
+        function setBgColor(el) {
+            const color = el.dataset.color;
+            const canvas = document.getElementById('canvas');
+            canvas.style.backgroundColor = color;
+            canvas.style.backgroundImage = 'none';
+            document.getElementById('canvas-overlay').style.background = 'rgba(0,0,0,0)';
+            hasCustomBg = false;
+            document.getElementById('clearBgBtn').classList.add('hidden');
+
+            // 更新 active 状态
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+            el.classList.add('active');
+
+            // 自动切换文字颜色
+            autoTextColor(color);
+        }
+
+        function autoTextColor(bgColor) {
+            // 简单亮度判断
+            const hex = bgColor.replace('#', '');
+            const r = parseInt(hex.substring(0,2), 16);
+            const g = parseInt(hex.substring(2,4), 16);
+            const b = parseInt(hex.substring(4,6), 16);
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            const textColor = luminance > 0.55 ? '#2d2d2d' : '#ffffff';
+            document.getElementById('fontColorPicker').value = textColor;
+            updatePreview();
+        }
+
+        // ========== 背景图片 ==========
+        function handleBgImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const canvas = document.getElementById('canvas');
+                canvas.style.backgroundImage = 'url(' + e.target.result + ')';
+                canvas.style.backgroundSize = 'cover';
+                canvas.style.backgroundPosition = 'center';
+                document.getElementById('canvas-overlay').style.background = 'rgba(0,0,0,0.30)';
+                hasCustomBg = true;
+                document.getElementById('clearBgBtn').classList.remove('hidden');
+                document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+
+                // 图片背景默认白色文字
+                document.getElementById('fontColorPicker').value = '#ffffff';
+                updatePreview();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearBgImage() {
+            const canvas = document.getElementById('canvas');
+            canvas.style.backgroundImage = 'none';
+            document.getElementById('canvas-overlay').style.background = 'rgba(0,0,0,0)';
+            hasCustomBg = false;
+            document.getElementById('clearBgBtn').classList.add('hidden');
+            document.getElementById('bgImageInput').value = '';
+            // 恢复默认
+            const firstSwatch = document.querySelector('.color-swatch');
+            if (firstSwatch) setBgColor(firstSwatch);
+        }
+
+        // ========== 导出海报 ==========
+        function exportPoster() {
+            const canvas = document.getElementById('canvas');
+            html2canvas(canvas, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: null,
+                logging: false
+            }).then(function(renderedCanvas) {
+                const link = document.createElement('a');
+                link.download = 'poster-' + Date.now() + '.png';
+                link.href = renderedCanvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        // ========== 监听输入 ==========
+        document.getElementById('inputQuote').addEventListener('input', updatePreview);
+        document.getElementById('inputSource').addEventListener('input', updatePreview);
+
+        // 初始化预览
+        updatePreview();
+    </script>
+</body>
+</html>
