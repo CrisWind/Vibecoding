@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金句海报生成器 Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai:wght@300;400;700&family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <script>tailwind.config={darkMode:'class'}</script>
+    <style>
+        *{box-sizing:border-box}
+        body{font-family:'Noto Sans SC',-apple-system,sans-serif;margin:0;overflow-x:hidden}
+        ::-webkit-scrollbar{width:4px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:999px}
+        .dark ::-webkit-scrollbar-thumb{background:#4b5563}
+        .sec-hd{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:10px 0;border-bottom:1px solid #f3f4f6}
+        .dark .sec-hd{border-color:#374151}
+        .sec-hd .chev{transition:transform .2s;width:14px;height:14px;color:#9ca3af}
+        .sec-hd.fold .chev{transform:rotate(-90deg)}
+        .sec-bd{overflow:hidden;transition:max-height .3s ease}
+        .sec-bd.fold{max-height:0!important}
+        .sw{width:26px;height:26px;border-radius:7px;cursor:pointer;transition:all .15s;border:2px solid transparent;flex-shrink:0}
+        .sw:hover{transform:scale(1.15)}
+        .sw.on{border-color:#818cf8;box-shadow:0 0 0 2px rgba(129,140,248,.3)}
+        .gsw{width:44px;height:26px;border-radius:7px;cursor:pointer;transition:all .15s;border:2px solid transparent;flex-shrink:0}
+        .gsw:hover{transform:scale(1.08)}
+        .gsw.on{border-color:#818cf8;box-shadow:0 0 0 2px rgba(129,140,248,.3)}
+        .tc{width:56px;height:74px;border-radius:9px;cursor:pointer;transition:all .2s;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:8px;padding:4px;text-align:center;position:relative;overflow:hidden;flex-shrink:0}
+        .tc:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+        .tc.on{border-color:#818cf8;box-shadow:0 0 0 2px rgba(129,140,248,.3)}
+        .tc .tl{position:absolute;bottom:3px;font-size:7px;opacity:.85;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+        .rb,.lb{padding:5px 11px;border-radius:7px;cursor:pointer;font-size:11px;transition:all .15s;border:1.5px solid #e5e7eb;background:transparent;color:inherit}
+        .dark .rb,.dark .lb{border-color:#4b5563}
+        .rb:hover,.lb:hover{border-color:#a5b4fc}
+        .rb.on,.lb.on{background:#818cf8;color:#fff;border-color:#818cf8}
+        input[type="range"]{-webkit-appearance:none;appearance:none;height:3px;background:#e5e7eb;border-radius:999px;outline:none;width:100%}
+        .dark input[type="range"]{background:#4b5563}
+        input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;background:#818cf8;border-radius:50%;cursor:pointer;transition:transform .1s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+        input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+        .upl{position:relative;overflow:hidden;cursor:pointer;border:1.5px dashed #d1d5db;border-radius:9px;padding:9px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:#9ca3af;transition:all .15s}
+        .dark .upl{border-color:#4b5563}
+        .upl:hover{border-color:#a5b4fc;color:#818cf8}
+        .upl input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+        .expbtn{background:linear-gradient(135deg,#818cf8,#a78bfa);transition:all .2s;width:100%;padding:13px;color:#fff;font-size:13px;font-weight:600;border-radius:11px;border:none;cursor:pointer}
+        .expbtn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(129,140,248,.4)}
+        .expbtn:active{transform:translateY(0)}
+        #cw{position:relative;transition:width .4s ease,height .4s ease;border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.15),0 0 0 1px rgba(0,0,0,.05)}
+        #cbg{position:absolute;inset:0;background-size:cover;background-position:center;transition:filter .3s}
+        #cov{position:absolute;inset:0;transition:background .3s;z-index:1}
+        #cno{position:absolute;inset:0;opacity:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");mix-blend-mode:overlay;pointer-events:none;z-index:2;transition:opacity .3s}
+        #cct{position:relative;z-index:3;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:56px 44px;transition:all .3s}
+        #cct.lo-left{align-items:flex-start;text-align:left}
+        #cct.lo-center{align-items:center;text-align:center}
+        #cct.lo-vertical{writing-mode:vertical-rl;text-orientation:mixed;align-items:center;justify-content:center;padding:44px 56px}
+        .qm{font-size:48px;line-height:1;opacity:0;font-family:Georgia,serif;position:absolute;transition:opacity .3s;z-index:3}
+        #qmo{top:28px;left:32px}
+        #qmc{bottom:66px;right:32px}
+        .lo-vertical #qmo{top:32px;right:28px;left:auto}
+        .lo-vertical #qmc{bottom:32px;left:28px;right:auto}
+        #qt{word-break:break-word;white-space:pre-wrap;transition:all .3s;max-width:100%}
+        #qd{width:36px;height:1.5px;margin:18px auto;opacity:0;transition:opacity .3s}
+        .lo-left #qd{margin:18px 0}
+        .lo-vertical #qd{width:1.5px;height:36px;margin:18px auto}
+        #qs{font-size:13px;opacity:.65;transition:all .3s}
+        .lo-vertical #qs{opacity:.6}
+        #cwm{position:absolute;z-index:4;transition:all .3s;pointer-events:none}
+        #cwm img{width:100%;height:100%;object-fit:contain}
+        @media(max-width:768px){
+            .appl{flex-direction:column-reverse!important}
+            .side{width:100%!important;max-height:55vh;border-right:none!important;border-top:1px solid #e5e7eb}
+            .dark .side{border-color:#374151}
+            .cnva{min-height:45vh;padding:16px!important}
+            #cw{transform:scale(0.65);transform-origin:center}
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+<div class="appl flex min-h-screen">
+
+<aside class="side w-[350px] bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 overflow-y-auto flex-shrink-0 p-5 transition-colors duration-300">
+    <div class="flex items-center justify-between mb-5">
+        <div><h1 class="text-base font-bold text-gray-800 dark:text-gray-100">金句海报</h1><p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Pro · 排版生成器</p></div>
+        <button onclick="toggleDark()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="暗色模式">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+    </div>
+
+    <!-- 风格模板 -->
+    <div class="mb-1"><div class="sec-hd" onclick="togSec(this)"><span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">风格模板</span><svg class="chev" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div>
+    <div class="sec-bd pt-2 pb-1" style="max-height:200px"><div id="tg" class="flex gap-2 overflow-x-auto pb-2"></div></div></div>
+
+    <!-- 文本内容 -->
+    <div class="mb-1"><div class="sec-hd" onclick="togSec(this)"><span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">文本内容</span><svg class="chev" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div>
+    <div class="sec-bd pt-2 pb-1" style="max-height:260px">
+        <textarea id="iQ" rows="3" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition placeholder-gray-300" placeholder="输入你喜爱的句子...">你要做一个不动声色的大人了。不准情绪化，不准偷偷想念，不准回头看。</textarea>
+        <input id="iS" type="text" class="w-full mt-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition placeholder-gray-300" placeholder="作者 / 书名" value="—— 村上春树">
+    </div></div>
+
+    <!-- 背景 -->
+    <div class="mb-1"><div class="sec-hd" onclick="togSec(this)"><span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">背景</span><svg class="chev" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div>
+    <div class="sec-bd pt-2 pb-1" style="max-height:500px">
+        <p class="text-[10px] text-gray-400 mb-1.5">纯色</p>
+        <div id="cg" class="flex gap-1.5 flex-wrap mb-2"></div>
+        <p class="text-[10px] text-gray-400 mb-1.5">渐变</p>
+        <div id="gg" class="flex gap-1.5 flex-wrap mb-2"></div>
+        <div class="upl mb-2">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            上传背景图片
+            <input type="file" id="bgI" accept="image/*" onchange="hBg(event)">
+        </div>
+        <button id="clBg" class="hidden text-[10px] text-red-400 hover:text-red-500 mb-2 transition" onclick="clrBg()">✕ 清除图片</button>
+        <div class="flex justify-between mb-1"><span class="text-[10px] text-gray-400">蒙版深度</span><span id="ovV" class="text-[10px] text-indigo-400 font-mono">30%</span></div>
+        <input type="range" id="ovS" min="0" max="80" value="30" oninput="upd()">
+        <div class="flex justify-between mb-1 mt-2"><span class="text-[10px] text-gray-400">背景模糊</span><span id="blV" class="text-[10px] text-indigo-400 font-mono">0px</span></div>
+        <input type="range" id="blS" min="0" max="20" value="0" oninput="upd()">
+        <label class="flex items-center gap-2 mt-2 cursor-pointer"><input type="checkbox" id="noT" class="accent-indigo-500" onchange="upd()"><span class="text-[10px] text-gray-500 dark:text-gray-400">纸张纹理叠加</span></label>
+    </div></div>
+
+    <!-- 字体排版 -->
+    <div class="mb-1"><div class="sec-hd" onclick="togSec(this)"><span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">字体排版</span><svg class="chev" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div>
+    <div class="sec-bd pt-2 pb-1" style="max-height:500px">
+        <div class="mb-2"><span class="text-[10px] text-gray-400 block mb-1">字体</span>
+            <select id="fS" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition" onchange="upd()">
+                <option value="'LXGW WenKai',cursive">霞鹜文楷 LXGW</option>
+                <option value="'Noto Serif SC',serif">思源宋体 Serif</option>
+                <option value="'Noto Sans SC',sans-serif" selected>思源黑体 Sans</option>
+                <option value="'Ma Shan Zheng',cursive">马善政楷书</option>
+                <option value="STKaiti,KaiTi,serif">系统楷体</option>
+                <option value="STSong,SimSun,serif">系统宋体</option>
+            </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-2">
+            <div><div class="flex justify-between mb-1"><span class="text-[10px] text-gray-400">字号</span><span id="szV" class="text-[10px] text-indigo-400 font-mono">24px</span></div><input type="range" id="szS" min="14" max="48" value="24" oninput="upd()"></div>
+            <div><div class="flex justify-between mb-1"><span class="text-[10px] text-gray-400">行距</span><span id="lhV" class="text-[10px] text-indigo-400 font-mono">2.2</span></div><input type="range" id="lhS" min="14" max="36" value="22" oninput="upd()"></div>
+        </div>
+        <div class="mb-2"><div class="flex justify-between mb-1"><span class="text-[10px] text-gray-400">字间距</span><span id="lsV" class="text-[10px] text-indigo-400 font-mono">2px</span></div><input type="range" id="lsS" min="0" max="16" value="2" oninput="upd()"></div>
+        <div class="grid grid-cols-2 gap-3">
+            <div><span class="text-[10px] text-gray-400 block mb-1">主文字色</span><div class="flex items-center gap-2"><input type="color" id="tcP" value="#ffffff" class="w-6 h-6 rounded-lg cursor-pointer border-0 p-0" oninput="upd()"><span id="tcH" class="text-[10px] font-mono text-gray-400">#fff</span></div></div>
+            <div><span class="text-[10px] text-gray-400 block mb-1">来源文字色</span><div class="flex items-center gap-2"><input type="color" id="scP" value="#ffffff" class="w-6 h-6 rounded-lg cursor-pointer border-0 p-0" oninput="upd()"><span id="scH" class="text-[10px] font-mono text-gray-400">#fff</span></div></div>
+        </div>
+    </div></div>
+
+    <!-- 布局 -->
+    <div class="mb-1"><div class="sec-hd" onclick="togSec(this)"><span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">布局</span><svg class="chev" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div>
+    <div class="sec-bd pt-2 pb-1" style="max-height:200px">
+        <p class="text-[10px] text-gray-400 mb-1.5">排版方向</p>
+        <div class="flex gap-2 mb-3">
+            <button class="lb on" data-l="center" onclick="setLo(this)">居中</button>
+            <button class="lb" data-l="left" onclick="setLo(this)">左对齐</button>
+            <button class="lb" data-l="vertical" onclick="setLo(this)">竖排</button>
+        </div>
+        <p class="text-[10px] text-gray-400 mb-1.5">画布比例</p>
+        <div class="flex gap-2 flex-wrap">
+            <button class="rb on" data-r="3:4" onclick="setRa(this)">3:4</button>
+            <button class="rb" data-r="1:1" onclick="setRa(this)">1:1</button>
+            <button class="rb" data-r="9:16" onclick="setRa(this)">9:16</button>
+            <button class="rb" data-r="16:9" onclick="setRa(this)">16:9</button>
+        </div>
+    </div></div>
+
+    <!-- 装饰 -->
+    <div class="mb-1"><div class="sec-hd" onclick="togSec(this)"><span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">装饰</span><svg class="chev" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div>
+    <div class="sec-bd pt-2 pb-1" style="max-height:150px">
+        <label class="flex items-center gap-2 cursor-pointer mb-2"><input type="checkbox" id="qmT" class="accent-indigo-500" onchange="upd()"><span class="text-[10px] text-gray-500 dark:text-gray-400">引号装饰 &#x201C; &#x201D;</span></label>
+        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="dvT" class="accent-indigo-500" onchange="upd()"><span class="text-[10px] text-gray-500 dark:text-gray-400">分隔线</span></label>
+    </div></div>
+
+    <!-- 水印 -->
+    <div class="mb-1"><div class="sec-hd" onclick="togSec(this)"><span class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">水印 / Logo</span><svg class="chev" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div>
+    <div class="sec-bd pt-2 pb-1" style="max-height:350px">
+        <div class="upl mb-2">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
+            上传小章鱼水印图片
+            <input type="file" id="wmI" accept="image/*" onchange="hWm(event)">
+        </div>
+        <div id="wmC" class="hidden">
+            <button class="text-[10px] text-red-400 hover:text-red-500 mb-2 transition" onclick="clrWm()">✕ 清除水印</button>
+            <p class="text-[10px] text-gray-400 mb-1.5">位置</p>
+            <div class="grid grid-cols-4 gap-1.5 mb-2">
+                <button class="rb text-[10px]" data-p="top-left" onclick="setWp(this)">左上</button>
+                <button class="rb text-[10px]" data-p="top-right" onclick="setWp(this)">右上</button>
+                <button class="rb text-[10px]" data-p="bottom-left" onclick="setWp(this)">左下</button>
+                <button class="rb text-[10px] on" data-p="bottom-right" onclick="setWp(this)">右下</button>
+            </div>
+            <div class="flex justify-between mb-1"><span class="text-[10px] text-gray-400">大小</span><span id="wsV" class="text-[10px] text-indigo-400 font-mono">60px</span></div>
+            <input type="range" id="wsS" min="20" max="120" value="60" oninput="upd()">
+            <div class="flex justify-between mb-1 mt-2"><span class="text-[10px] text-gray-400">透明度</span><span id="woV" class="text-[10px] text-indigo-400 font-mono">80%</span></div>
+            <input type="range" id="woS" min="10" max="100" value="80" oninput="upd()">
+        </div>
+    </div></div>
+
+    <!-- 导出 -->
+    <div class="mt-3 mb-2">
+        <div class="flex gap-2 mb-2">
+            <select id="exF" class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-600 dark:text-gray-300 focus:outline-none transition"><option value="png">PNG 无损</option><option value="jpg">JPG 压缩</option></select>
+            <select id="exS" class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-600 dark:text-gray-300 focus:outline-none transition"><option value="2">2x 高清</option><option value="3">3x 超清</option><option value="1">1x 标准</option></select>
+        </div>
+        <button class="expbtn" onclick="exp()">导出海报</button>
+        <p class="text-center text-[10px] text-gray-300 dark:text-gray-600 mt-1.5">Ctrl+S 快捷导出</p>
+    </div>
+</aside>
+
+<main class="cnva flex-1 flex items-center justify-center bg-gray-100 dark:bg-gray-950 p-8 transition-colors duration-300">
+    <div id="cw" style="width:450px;height:600px">
+        <div id="cbg"></div>
+        <div id="cov"></div>
+        <div id="cno"></div>
+        <div id="cct" class="lo-center">
+            <span id="qmo" class="qm" style="opacity:0">&#x201C;</span>
+            <p id="qt">你要做一个不动声色的大人了。不准情绪化，不准偷偷想念，不准回头看。</p>
+            <div id="qd"></div>
+            <p id="qs">—— 村上春树</p>
+            <span id="qmc" class="qm" style="opacity:0">&#x201D;</span>
+        </div>
+        <div id="cwm" style="display:none"><img id="wmi" src="" alt=""></div>
+    </div>
+</main>
+</div>
+
+<script>
+var $=function(id){return document.getElementById(id)};
+var COLORS=['#1a1a2e','#f5f0e8','#0f3d3e','#3d0c11','#1b1b3a','#fafafa','#2c3e50','#f8e8d4','#264653','#e76f51','#2d3436','#dfe6e9'];
+var GRADS=['linear-gradient(135deg,#0f0c29,#302b63,#24243e)','linear-gradient(135deg,#ffecd2,#fcb69f)','linear-gradient(135deg,#a8edea,#fed6e3)','linear-gradient(135deg,#667eea,#764ba2)','linear-gradient(135deg,#2c3e50,#4ca1af)','linear-gradient(135deg,#f5f7fa,#c3cfe2)','linear-gradient(135deg,#434343,#000000)','linear-gradient(135deg,#e0c3fc,#8ec5fc)'];
+var TMPLS=[
+{n:'\u6DF1\u591C\u6587\u5B66',bg:'#1a1a2e',tc:'#e8e0d4',sc:'#a09888',f:"'Noto Serif SC',serif",lo:'center',qm:true,dv:false},
+{n:'\u6696\u9633\u4E66\u623F',bg:'#f5f0e8',tc:'#3d3429',sc:'#8a7e6f',f:"'LXGW WenKai',cursive",lo:'left',qm:false,dv:true},
+{n:'\u6C34\u58A8\u7AD6\u6392',bg:'#f7f4ef',tc:'#2c2c2c',sc:'#888888',f:"'Ma Shan Zheng',cursive",lo:'vertical',qm:true,dv:false},
+{n:'\u68EE\u6797\u4F4E\u8BED',bg:'linear-gradient(135deg,#0f3d3e,#1a5653)',tc:'#e0ebe8',sc:'#a0bfb8',f:"'Noto Sans SC',sans-serif",lo:'center',qm:false,dv:true},
+{n:'\u859B\u8863\u8349\u68A6',bg:'linear-gradient(135deg,#e0c3fc,#8ec5fc)',tc:'#2d2455',sc:'#5a4f8a',f:"'LXGW WenKai',cursive",lo:'center',qm:true,dv:false},
+{n:'\u590D\u53E4\u80F6\u7247',bg:'linear-gradient(135deg,#434343,#1a1a1a)',tc:'#f0e6d3',sc:'#b8a88a',f:"'Noto Serif SC',serif",lo:'left',qm:false,dv:true},
+{n:'\u6781\u7B80\u7EAF\u767D',bg:'#ffffff',tc:'#1a1a1a',sc:'#999999',f:"'Noto Sans SC',sans-serif",lo:'center',qm:false,dv:false},
+{n:'\u6D77\u76D0\u5FAE\u98CE',bg:'linear-gradient(135deg,#667eea,#764ba2)',tc:'#ffffff',sc:'#e0d6f0',f:"'Noto Sans SC',sans-serif",lo:'center',qm:true,dv:true}
+];
+var RATS={'3:4':[450,600],'1:1':[500,500],'9:16':[360,640],'16:9':[640,360]};
+
+var S={bgType:'solid',bgColor:'#1a1a2e',bgGrad:'',bgImg:null,ov:30,blur:0,noise:false,
+ff:"'Noto Sans SC',sans-serif",fs:24,lh:2.2,ls:2,tc:'#ffffff',sc:'#ffffff',
+lo:'center',ra:'3:4',qm:false,dv:false,
+wmD:null,wmP:'bottom-right',wmS:60,wmO:80,dk:false};
+
+function init(){
+    var cg=$('cg');
+    COLORS.forEach(function(c,i){var d=document.createElement('div');d.className='sw'+(i===0?' on':'');d.style.background=c;d.dataset.c=c;d.onclick=function(){selC(d)};cg.appendChild(d)});
+    var gx=$('gg');
+    GRADS.forEach(function(g){var d=document.createElement('div');d.className='gsw';d.style.background=g;d.dataset.g=g;d.onclick=function(){selG(d)};gx.appendChild(d)});
+    var tg=$('tg');
+    TMPLS.forEach(function(t,i){var d=document.createElement('div');d.className='tc'+(i===0?' on':'');d.style.background=t.bg;d.style.color=t.tc;d.innerHTML='<span style="font-size:13px;font-family:'+t.f+'">\u6587</span><span class="tl" style="color:'+t.tc+'">'+t.n+'</span>';d.onclick=function(){apTm(i,d)};tg.appendChild(d)});
+    loadSt();upd();
+}
+
+function apTm(i,el){
+    var t=TMPLS[i];
+    if(t.bg.indexOf('linear')===0){S.bgType='gradient';S.bgGrad=t.bg;document.querySelectorAll('.sw').forEach(function(s){s.classList.remove('on')});document.querySelectorAll('.gsw').forEach(function(s){s.classList.toggle('on',s.dataset.g===t.bg)})}
+    else{S.bgType='solid';S.bgColor=t.bg;document.querySelectorAll('.gsw').forEach(function(s){s.classList.remove('on')});document.querySelectorAll('.sw').forEach(function(s){s.classList.toggle('on',s.dataset.c===t.bg)})}
+    S.tc=t.tc;S.sc=t.sc;S.ff=t.f;S.lo=t.lo;S.qm=t.qm;S.dv=t.dv;
+    $('tcP').value=t.tc;$('scP').value=t.sc;$('fS').value=t.f;
+    $('qmT').checked=t.qm;$('dvT').checked=t.dv;
+    document.querySelectorAll('.lb').forEach(function(b){b.classList.toggle('on',b.dataset.l===t.lo)});
+    document.querySelectorAll('.tc').forEach(function(c){c.classList.remove('on')});el.classList.add('on');
+    upd();
+}
+
+function selC(el){S.bgType='solid';S.bgColor=el.dataset.c;document.querySelectorAll('.sw,.gsw').forEach(function(s){s.classList.remove('on')});el.classList.add('on');upd()}
+function selG(el){S.bgType='gradient';S.bgGrad=el.dataset.g;document.querySelectorAll('.sw,.gsw').forEach(function(s){s.classList.remove('on')});el.classList.add('on');upd()}
+function hBg(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){S.bgType='image';S.bgImg=ev.target.result;document.querySelectorAll('.sw,.gsw').forEach(function(s){s.classList.remove('on')});$('clBg').classList.remove('hidden');upd()};r.readAsDataURL(f)}
+function clrBg(){S.bgType='solid';S.bgImg=null;$('bgI').value='';$('clBg').classList.add('hidden');var f=document.querySelector('.sw');if(f)selC(f)}
+
+function hWm(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){S.wmD=ev.target.result;$('wmC').classList.remove('hidden');upd()};r.readAsDataURL(f)}
+function clrWm(){S.wmD=null;$('wmI').value='';$('wmC').classList.add('hidden');upd()}
+function setWp(el){S.wmP=el.dataset.p;el.parentElement.querySelectorAll('.rb').forEach(function(b){b.classList.remove('on')});el.classList.add('on');upd()}
+
+function setLo(el){S.lo=el.dataset.l;document.querySelectorAll('.lb').forEach(function(b){b.classList.remove('on')});el.classList.add('on');upd()}
+function setRa(el){S.ra=el.dataset.r;document.querySelectorAll('.rb[data-r]').forEach(function(b){b.classList.remove('on')});el.classList.add('on');upd()}
+function toggleDark(){S.dk=!S.dk;document.documentElement.classList.toggle('dark',S.dk);saveSt()}
+function togSec(h){h.classList.toggle('fold');h.nextElementSibling.classList.toggle('fold')}
+
+function upd(){
+    S.fs=+$('szS').value;S.lh=+$('lhS').value/10;S.ls=+$('lsS').value;
+    S.tc=$('tcP').value;S.sc=$('scP').value;S.ff=$('fS').value;
+    S.ov=+$('ovS').value;S.blur=+$('blS').value;S.noise=$('noT').checked;
+    S.qm=$('qmT').checked;S.dv=$('dvT').checked;
+    S.wmS=+$('wsS').value;S.wmO=+$('woS').value;
+
+    var wh=RATS[S.ra];$('cw').style.width=wh[0]+'px';$('cw').style.height=wh[1]+'px';
+
+    if(S.bgType==='image'&&S.bgImg){$('cw').style.background='none';$('cbg').style.backgroundImage='url('+S.bgImg+')';$('cbg').style.display='block';$('cbg').style.filter=S.blur>0?'blur('+S.blur+'px)':'none'}
+    else if(S.bgType==='gradient'){$('cw').style.background=S.bgGrad;$('cbg').style.display='none'}
+    else{$('cw').style.background=S.bgColor;$('cbg').style.display='none'}
+
+    $('cov').style.background='rgba(0,0,0,'+(S.ov/100)+')';
+    $('cno').style.opacity=S.noise?'0.08':'0';
+
+    $('cct').className='lo-'+S.lo;
+
+    var qt=$('qt'),qs=$('qs');
+    qt.textContent=$('iQ').value;qs.textContent=$('iS').value;
+    qt.style.fontSize=S.fs+'px';qt.style.fontFamily=S.ff;qt.style.color=S.tc;qt.style.lineHeight=S.lh;qt.style.letterSpacing=S.ls+'px';
+    qs.style.color=S.sc;qs.style.fontFamily=S.ff;
+
+    $('qmo').style.opacity=S.qm?'0.15':'0';$('qmo').style.color=S.tc;
+    $('qmc').style.opacity=S.qm?'0.15':'0';$('qmc').style.color=S.tc;
+    $('qd').style.opacity=S.dv?'0.4':'0';$('qd').style.backgroundColor=S.tc;
+
+    if(S.wmD){
+        $('cwm').style.display='block';$('wmi').src=S.wmD;
+        $('cwm').style.width=S.wmS+'px';$('cwm').style.height=S.wmS+'px';$('cwm').style.opacity=S.wmO/100;
+        var m='14px';
+        $('cwm').style.top=S.wmP.indexOf('top')>=0?m:'auto';
+        $('cwm').style.bottom=S.wmP.indexOf('bottom')>=0?m:'auto';
+        $('cwm').style.left=S.wmP.indexOf('left')>=0?m:'auto';
+        $('cwm').style.right=S.wmP.indexOf('right')>=0?m:'auto';
+    }else{$('cwm').style.display='none'}
+
+    $('szV').textContent=S.fs+'px';$('lhV').textContent=S.lh.toFixed(1);$('lsV').textContent=S.ls+'px';
+    $('ovV').textContent=S.ov+'%';$('blV').textContent=S.blur+'px';
+    $('tcH').textContent=S.tc;$('scH').textContent=S.sc;
+    $('wsV').textContent=S.wmS+'px';$('woV').textContent=S.wmO+'%';
+    saveSt();
+}
+
+function exp(){
+    html2canvas($('cw'),{scale:+$('exS').value,useCORS:true,backgroundColor:null,logging:false}).then(function(c){
+        var a=document.createElement('a');var f=$('exF').value;
+        a.download='poster-'+Date.now()+'.'+(f==='jpg'?'jpg':'png');
+        a.href=f==='jpg'?c.toDataURL('image/jpeg',0.92):c.toDataURL('image/png');
+        a.click();
+    });
+}
+
+function saveSt(){try{var o=Object.assign({},S);delete o.bgImg;delete o.wmD;localStorage.setItem('pp',JSON.stringify(o))}catch(e){}}
+function loadSt(){try{var r=localStorage.getItem('pp');if(!r)return;var s=JSON.parse(r);Object.assign(S,s);
+$('szS').value=S.fs;$('lhS').value=Math.round(S.lh*10);$('lsS').value=S.ls;
+$('tcP').value=S.tc;$('scP').value=S.sc;$('fS').value=S.ff;
+$('ovS').value=S.ov;$('blS').value=S.blur;$('noT').checked=S.noise;
+$('qmT').checked=S.qm;$('dvT').checked=S.dv;
+$('wsS').value=S.wmS;$('woS').value=S.wmO;
+document.querySelectorAll('.lb').forEach(function(b){b.classList.toggle('on',b.dataset.l===S.lo)});
+document.querySelectorAll('.rb[data-r]').forEach(function(b){b.classList.toggle('on',b.dataset.r===S.ra)});
+if(S.dk)document.documentElement.classList.add('dark');
+}catch(e){}}
+
+document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();exp()}});
+$('iQ').addEventListener('input',upd);$('iS').addEventListener('input',upd);
+init();
+</script>
+</body>
+</html>
