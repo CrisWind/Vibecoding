@@ -1,0 +1,21 @@
+{
+  "name": "拉了吗 LogIt",
+  "short_name": "拉了吗",
+  "description": "Chiikawa 风格的健康打卡与找公厕神器",
+  "start_url": "./card.html",
+  "display": "standalone",
+  "background_color": "#FFFBF0",
+  "theme_color": "#FFDEE9",
+  "icons": [
+    {
+      "src": "chiikawa_happy.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "chiikawa_happy.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
