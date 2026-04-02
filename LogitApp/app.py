@@ -1,6 +1,8 @@
 import os
 import sqlite3
 import time
+import unicodedata
+import re
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 
@@ -77,6 +79,19 @@ def init_db():
     conn.close()
 
 
+def normalize_username(name):
+    """统一处理用户名：去除不可见字符、全角空格、Unicode 归一化"""
+    if not name:
+        return ''
+    # Unicode NFC 归一化（统一组合字符）
+    name = unicodedata.normalize('NFC', name)
+    # 去除零宽字符、不可见控制字符
+    name = re.sub(r'[‌‍﻿­]', '', name)
+    # 将全角空格替换为半角空格，再 strip
+    name = name.replace('　', ' ').strip()
+    return name
+
+
 def get_current_user_id():
     uid = request.headers.get('X-User-Id', None)
     if uid is None:
@@ -109,7 +124,7 @@ def serve_static(filename):
 @app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.get_json(silent=True) or {}
-    username = str(data.get('username', '')).strip()
+    username = normalize_username(str(data.get('username', '')))
     if not username:
         return jsonify({'code': 400, 'message': '昵称不能为空'}), 400
     if len(username) > 50:
@@ -117,7 +132,7 @@ def api_login():
 
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT id, username FROM users WHERE username = ?', (username,))
+    c.execute('SELECT id, username FROM users WHERE TRIM(username) = ? COLLATE NOCASE', (username,))
     row = c.fetchone()
     if row:
         conn.close()
@@ -213,14 +228,19 @@ def friend_request():
     if user_id is None:
         return jsonify({'code': 401, 'message': '未登录'}), 401
     data = request.get_json(silent=True) or {}
-    target_name = str(data.get('username', '')).strip()
+    target_name = normalize_username(str(data.get('username', '')))
     if not target_name:
         return jsonify({'code': 400, 'message': '请输入对方昵称'}), 400
 
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT id FROM users WHERE username = ?', (target_name,))
+    # 先精确匹配（忽略大小写 + 去首尾空格）
+    c.execute('SELECT id FROM users WHERE TRIM(username) = ? COLLATE NOCASE', (target_name,))
     target = c.fetchone()
+    # 精确匹配失败时，用 LIKE 模糊兜底
+    if not target:
+        c.execute('SELECT id FROM users WHERE TRIM(username) LIKE ? COLLATE NOCASE', (target_name,))
+        target = c.fetchone()
     if not target:
         conn.close()
         return jsonify({'code': 404, 'message': '找不到该用户 (•́ω•̀)'}), 404
