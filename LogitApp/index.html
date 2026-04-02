@@ -1276,20 +1276,55 @@ function initMap() {
 
 function locateUserByAMap() {
   var loading = document.getElementById('mapLoading');
-  var geolocation = new AMap.Geolocation({
-    enableHighAccuracy: true, timeout: 8000, maximumAge: 0, convert: true,
-    showButton: false, showMarker: false, showCircle: false, panToLocation: false, zoomToAccuracy: false
-  });
-  geolocation.getCurrentPosition(function(status, result){
-    if (status === 'complete' && result && result.position) {
-      placeUserAndSearch(result.position.lat, result.position.lng);
-      hideMapLoading(loading);
-    } else {
-      showToast('📍 定位失败，已切换到天安门演示');
-      placeUserAndSearch(FALLBACK_LAT, FALLBACK_LNG);
-      hideMapLoading(loading);
+  // 第一层：浏览器原生定位
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        placeUserAndSearch(pos.coords.latitude, pos.coords.longitude);
+        hideMapLoading(loading);
+      },
+      function() { mapAMapFallback(loading); },
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
+    );
+  } else {
+    mapAMapFallback(loading);
+  }
+}
+function mapAMapFallback(loading) {
+  try {
+    if (!geoInstance) {
+      geoInstance = new AMap.Geolocation({
+        enableHighAccuracy: false, timeout: 5000, maximumAge: 30000, convert: true,
+        showButton: false, showMarker: false, showCircle: false, panToLocation: false, zoomToAccuracy: false
+      });
     }
-  });
+    geoInstance.getCurrentPosition(function(status, result) {
+      if (status === 'complete' && result && result.position) {
+        placeUserAndSearch(result.position.lat, result.position.lng);
+        hideMapLoading(loading);
+      } else { mapIPFallback(loading); }
+    });
+  } catch(e) { mapIPFallback(loading); }
+}
+function mapIPFallback(loading) {
+  try {
+    var cs = new AMap.CitySearch();
+    cs.getLocalCity(function(status, result) {
+      if (status === 'complete' && result && result.bounds) {
+        var c = result.bounds.getCenter();
+        showToast('📍 使用IP定位（' + (result.city || '未知城市') + '）');
+        placeUserAndSearch(c.lat, c.lng);
+      } else {
+        showToast('📍 定位失败，已切换到天安门演示');
+        placeUserAndSearch(FALLBACK_LAT, FALLBACK_LNG);
+      }
+      hideMapLoading(loading);
+    });
+  } catch(e) {
+    showToast('📍 定位失败，已切换到天安门演示');
+    placeUserAndSearch(FALLBACK_LAT, FALLBACK_LNG);
+    hideMapLoading(loading);
+  }
 }
 
 function hideMapLoading(el) {
@@ -1327,37 +1362,48 @@ function createUsagiMarkerContent() {
   return wrap;
 }
 
+function renderToiletMarkers(pois) {
+  pois.forEach(function(poi){
+    if (!poi || !poi.location) return;
+    var poiLng = poi.location.lng;
+    var poiLat = poi.location.lat;
+    var name = poi.name || '公共厕所';
+    var address = poi.address || '（暂无地址）';
+    var distance = (poi.distance != null) ? Math.round(poi.distance) : null;
+    var marker = new AMap.Marker({ position: [poiLng, poiLat], content: createUsagiMarkerContent(), anchor: 'center', zIndex: 300 });
+    marker.on('click', function(){
+      var distText = (distance != null) ? ('距离你约 ' + distance + ' 米') : '距离未知';
+      var html =
+        '<div class="popup-card">' +
+          '<h4>' + escapeHtml(name) + '</h4>' +
+          '<p>' + escapeHtml(address) + '</p>' +
+          '<p style="margin:0 0 10px;font-weight:700;color:#E8B4B8">' + escapeHtml(distText) + '</p>' +
+          '<button class="popup-nav-btn" onclick="showToast(\'🧭 导航功能即将上线 ♡\')">🐰 导航前往</button>' +
+        '</div>';
+      infoWin.setContent(html);
+      infoWin.open(amap, marker.getPosition());
+    });
+    amap.add(marker);
+    toiletMarkers.push(marker);
+  });
+}
+
 function searchToiletsAround(lat, lng) {
-  var placeSearch = new AMap.PlaceSearch({ pageSize: 20, type: '200300|200301|200302' });
   var center = new AMap.LngLat(lng, lat);
-  placeSearch.searchNearBy('公共厕所|洗手间|卫生间', center, 1000, function(status, result){
-    if (status !== 'complete' || !result || !result.poiList || !result.poiList.pois) {
-      showToast('😢 周边搜索失败'); return;
+  var placeSearch = new AMap.PlaceSearch({ pageSize: 25 });
+  placeSearch.searchNearBy('厕所|洗手间|卫生间|公厕', center, 2000, function(status, result){
+    if (status === 'complete' && result && result.poiList && result.poiList.pois && result.poiList.pois.length) {
+      renderToiletMarkers(result.poiList.pois);
+      return;
     }
-    var pois = result.poiList.pois;
-    if (!pois.length) { showToast('🐰 附近 1km 没搜到公厕'); return; }
-    pois.forEach(function(poi){
-      if (!poi || !poi.location) return;
-      var poiLng = poi.location.lng;
-      var poiLat = poi.location.lat;
-      var name = poi.name || '公共厕所';
-      var address = poi.address || '（暂无地址）';
-      var distance = (poi.distance != null) ? Math.round(poi.distance) : null;
-      var marker = new AMap.Marker({ position: [poiLng, poiLat], content: createUsagiMarkerContent(), anchor: 'center', zIndex: 300 });
-      marker.on('click', function(){
-        var distText = (distance != null) ? ('距离你约 ' + distance + ' 米') : '距离未知';
-        var html =
-          '<div class="popup-card">' +
-            '<h4>' + escapeHtml(name) + '</h4>' +
-            '<p>' + escapeHtml(address) + '</p>' +
-            '<p style="margin:0 0 10px;font-weight:700;color:#E8B4B8">' + escapeHtml(distText) + '</p>' +
-            '<button class="popup-nav-btn" onclick="showToast(\'🧭 导航功能即将上线 ♡\')">🐰 导航前往</button>' +
-          '</div>';
-        infoWin.setContent(html);
-        infoWin.open(amap, marker.getPosition());
-      });
-      amap.add(marker);
-      toiletMarkers.push(marker);
+    // 重试：简化关键词 + 扩大范围
+    var retry = new AMap.PlaceSearch({ pageSize: 25 });
+    retry.searchNearBy('厕所', center, 3000, function(s2, r2){
+      if (s2 === 'complete' && r2 && r2.poiList && r2.poiList.pois && r2.poiList.pois.length) {
+        renderToiletMarkers(r2.poiList.pois);
+      } else {
+        showToast('😢 周边 3km 内未搜到公厕');
+      }
     });
   });
 }
