@@ -76,6 +76,35 @@ def init_db():
             pass
 
     conn.commit()
+
+    # 迁移：归一化所有已存储的旧用户名（修复历史脏数据）
+    rows = c.execute('SELECT id, username FROM users').fetchall()
+    for row in rows:
+        clean = normalize_username(row['username'])
+        if clean and clean != row['username']:
+            try:
+                c.execute('UPDATE users SET username = ? WHERE id = ?', (clean, row['id']))
+            except sqlite3.IntegrityError:
+                pass  # 归一化后与其他用户重名，跳过
+    conn.commit()
+
+    # 迁移：合并归一化后重名的重复用户（修复重复注册问题）
+    c.execute('SELECT username FROM users GROUP BY username HAVING COUNT(*) > 1')
+    dupes = [row['username'] for row in c.fetchall()]
+    for dup_name in dupes:
+        c.execute('SELECT id FROM users WHERE username = ? ORDER BY id ASC', (dup_name,))
+        ids = [r['id'] for r in c.fetchall()]
+        if len(ids) < 2:
+            continue
+        keeper = ids[0]
+        for old_id in ids[1:]:
+            c.execute('UPDATE checkin_logs SET user_id = ? WHERE user_id = ?', (keeper, old_id))
+            c.execute('UPDATE friends SET user_id_1 = ? WHERE user_id_1 = ?', (keeper, old_id))
+            c.execute('UPDATE friends SET user_id_2 = ? WHERE user_id_2 = ?', (keeper, old_id))
+            c.execute('DELETE FROM users WHERE id = ?', (old_id,))
+    # 清理自引用和重复好友记录
+    c.execute('DELETE FROM friends WHERE user_id_1 = user_id_2')
+    conn.commit()
     conn.close()
 
 
@@ -134,7 +163,17 @@ def api_login():
     c = conn.cursor()
     c.execute('SELECT id, username FROM users WHERE TRIM(username) = ? COLLATE NOCASE', (username,))
     row = c.fetchone()
+    # SQL 匹配失败时，Python 端归一化逐条比对
+    if not row:
+        c.execute('SELECT id, username FROM users')
+        for u in c.fetchall():
+            if normalize_username(u['username']) == username:
+                row = u
+                break
     if row:
+        # 始终同步存储的用户名为归一化版本
+        c.execute('UPDATE users SET username = ? WHERE id = ?', (username, row['id']))
+        conn.commit()
         conn.close()
         return jsonify({'code': 200, 'user_id': row['id'], 'username': username}), 200
 
@@ -242,6 +281,13 @@ def friend_request():
         c.execute('SELECT id FROM users WHERE TRIM(username) LIKE ? COLLATE NOCASE', (target_name,))
         target = c.fetchone()
     if not target:
+        # Python 端逐条归一化比对（终极兜底）
+        c.execute('SELECT id, username FROM users')
+        for u in c.fetchall():
+            if normalize_username(u['username']) == target_name:
+                target = u
+                break
+    if not target:
         conn.close()
         return jsonify({'code': 404, 'message': '找不到该用户 (•́ω•̀)'}), 404
     tid = target['id']
@@ -282,7 +328,7 @@ def friend_pending():
     rows = c.fetchall()
     conn.close()
     result = [{'request_id': r['request_id'], 'from_user_id': r['from_id'],
-               'from_username': r['from_name'], 'created_at': r['created_at']} for r in rows]
+               'from_username': normalize_username(r['from_name']), 'created_at': r['created_at']} for r in rows]
     return jsonify({'code': 200, 'data': result}), 200
 
 
@@ -333,7 +379,7 @@ def friend_list():
         ) WHERE f.status = 'accepted' ORDER BY u.username''', (user_id, user_id))
     rows = c.fetchall()
     conn.close()
-    result = [{'friend_id': r['fid'], 'username': r['username'],
+    result = [{'friend_id': r['fid'], 'username': normalize_username(r['username']),
                'current_status': r['current_status']} for r in rows]
     return jsonify({'code': 200, 'data': result}), 200
 
@@ -384,7 +430,7 @@ def friends_active():
     rows = c.fetchall()
     conn.close()
     now = time.time()
-    result = [{'friend_id': r['fid'], 'username': r['username'],
+    result = [{'friend_id': r['fid'], 'username': normalize_username(r['username']),
                'elapsed_seconds': max(0, int(now - (r['poop_start_time'] or now)))} for r in rows]
     return jsonify({'code': 200, 'data': result}), 200
 
