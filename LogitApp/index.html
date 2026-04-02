@@ -1,2233 +1,1493 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-  <title>拉了吗 LogIt ♡ Chiikawa Edition</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="chiikawa_happy.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { theme: { extend: { colors: { cream: '#FFFBF0', 'ck-pink': '#FFDEE9', 'ck-blue': '#D6EAF8', 'ck-yellow': '#FCF3CF', 'ck-brown': '#5D4037' }, fontFamily: { cute: ['Quicksand', 'sans-serif'] } } } }
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-  <!-- ✅ AMap Security Config (必须在 AMap 脚本前) -->
-  <script>window._AMapSecurityConfig = { securityJsCode: '66fdd546bbe4d83be54e4a838bd3d9db' };</script>
-  <!-- ✅ AMap JS API 2.0 + Plugins -->
-  <script
-    src="https://webapi.amap.com/maps?v=2.0&key=76f8983290786ddae7f173405ef81903&plugin=AMap.Geolocation,AMap.PlaceSearch"></script>
-
-  <style>
-    * {
-      font-family: 'Quicksand', system-ui, sans-serif
-    }
-
-    body {
-      background: #FFFBF0;
-      color: #5D4037;
-      -ms-overflow-style: none;
-      scrollbar-width: none
-    }
-
-    body::-webkit-scrollbar {
-      display: none
-    }
-
-    @keyframes breathe {
-
-      0%,
-      100% {
-        box-shadow: 0 0 0 0 rgba(232, 180, 184, .45);
-        transform: scale(1)
-      }
-
-      50% {
-        box-shadow: 0 0 24px 8px rgba(232, 180, 184, .2);
-        transform: scale(1.04)
-      }
-    }
-
-    @keyframes pulse-ring {
-      0% {
-        transform: scale(1);
-        opacity: .6
-      }
-
-      100% {
-        transform: scale(2.8);
-        opacity: 0
-      }
-    }
-
-    @keyframes float {
-
-      0%,
-      100% {
-        transform: translateY(0)
-      }
-
-      50% {
-        transform: translateY(-6px)
-      }
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(12px)
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0)
-      }
-    }
-
-    @keyframes wiggle {
-
-      0%,
-      100% {
-        transform: rotate(0)
-      }
-
-      25% {
-        transform: rotate(-3deg)
-      }
-
-      75% {
-        transform: rotate(3deg)
-      }
-    }
-
-    @keyframes sheetUp {
-      from {
-        transform: translateY(18px);
-        opacity: 0
-      }
-
-      to {
-        transform: translateY(0);
-        opacity: 1
-      }
-    }
-
-    @keyframes spin {
-      from {
-        transform: rotate(0)
-      }
-
-      to {
-        transform: rotate(360deg)
-      }
-    }
-
-    .anim-float {
-      animation: float 3s ease-in-out infinite
-    }
-
-    .anim-wiggle {
-      animation: wiggle 2s ease-in-out infinite
-    }
-
-    .anim-fade-in {
-      animation: fadeInUp .45s ease-out both
-    }
-
-    .toast {
-      position: fixed;
-      top: 18%;
-      left: 50%;
-      transform: translateX(-50%) translateY(-8px);
-      background: linear-gradient(135deg, #FFDEE9, #D6EAF8);
-      color: #5D4037;
-      padding: 14px 28px;
-      border-radius: 9999px;
-      font-size: 14px;
-      font-weight: 700;
-      box-shadow: 0 8px 30px rgba(232, 180, 184, .35);
-      opacity: 0;
-      pointer-events: none;
-      transition: all .35s cubic-bezier(.4, .2, .2, 1);
-      z-index: 9999;
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0)
-    }
-
-    .opt-pill {
-      transition: all .2s;
-      border: 2px solid transparent
-    }
-
-    .opt-pill.active {
-      background: #D6EAF8;
-      color: #5D4037;
-      border-color: #87CEEB;
-      box-shadow: 0 2px 8px rgba(135, 206, 235, .3)
-    }
-
-    .color-dot {
-      width: 28px;
-      height: 28px;
-      border-radius: 9999px;
-      cursor: pointer;
-      transition: transform .15s, box-shadow .15s;
-      border: 2.5px solid transparent
-    }
-
-    .color-dot:hover {
-      transform: scale(1.18)
-    }
-
-    .color-dot.active {
-      border-color: #E8B4B8;
-      box-shadow: 0 0 0 3px rgba(232, 180, 184, .3);
-      transform: scale(1.18)
-    }
-
-    .tab-bar {
-      background: #FFFBF0;
-      border-top: 2px solid #FFDEE9
-    }
-
-    .tab-item {
-      transition: all .3s
-    }
-
-    .tab-item .tab-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 9999px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all .3s
-    }
-
-    .tab-item.active-tab .tab-icon {
-      box-shadow: 0 0 18px 5px rgba(255, 222, 233, .7)
-    }
-
-    .tab-item.active-tab .tab-label {
-      color: #E8B4B8;
-      font-weight: 700
-    }
-
-    .tab-label {
-      font-size: 10px;
-      color: #8D6E63;
-      margin-top: 2px;
-      transition: color .2s
-    }
-
-    #map {
-      width: 100%;
-      height: calc(100vh - 60px - 64px)
-    }
-
-    .map-loading {
-      position: absolute;
-      inset: 0;
-      z-index: 800;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255, 251, 240, .92);
-      backdrop-filter: blur(4px);
-      transition: opacity .4s;
-    }
-
-    .map-loading.fade-out {
-      opacity: 0;
-      pointer-events: none
-    }
-
-    .yaha-banner {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 600;
-      text-align: center;
-      padding: 8px;
-      background: linear-gradient(135deg, rgba(252, 243, 207, .92), rgba(255, 248, 220, .92));
-      backdrop-filter: blur(4px);
-      font-size: 16px;
-      font-weight: 700;
-      color: #8D6E63;
-      border-bottom: 2px dashed #DEB887;
-    }
-
-    /* ✅ Chiikawa 风格弹窗卡片（AMap InfoWindow 内容用它） */
-    .popup-card {
-      padding: 14px 16px;
-      font-family: 'Quicksand', sans-serif
-    }
-
-    .popup-card h4 {
-      font-size: 14px;
-      font-weight: 700;
-      color: #5D4037;
-      margin: 0 0 4px
-    }
-
-    .popup-card p {
-      font-size: 12px;
-      color: #8D6E63;
-      margin: 0 0 10px
-    }
-
-    .popup-nav-btn {
-      display: inline-block;
-      width: 100%;
-      text-align: center;
-      padding: 8px 0;
-      border-radius: 9999px;
-      font-size: 13px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #FCF3CF, #FFDEE9);
-      color: #5D4037;
-      cursor: pointer;
-      border: none;
-      font-family: 'Quicksand', sans-serif
-    }
-
-    .popup-nav-btn:active {
-      opacity: .85
-    }
-
-    .my-location-icon {
-      position: relative;
-      width: 18px;
-      height: 18px
-    }
-
-    .my-location-icon .dot {
-      width: 18px;
-      height: 18px;
-      background: #E8B4B8;
-      border: 3px solid #fff;
-      border-radius: 50%;
-      box-shadow: 0 0 6px rgba(232, 180, 184, .5);
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 2
-    }
-
-    .my-location-icon .ring {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: rgba(232, 180, 184, .35);
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 1;
-      animation: pulse-ring 1.8s ease-out infinite
-    }
-
-    .health-card {
-      border-radius: 28px;
-      padding: 28px 24px;
-      text-align: center;
-      box-shadow: 0 2px 16px rgba(255, 222, 233, .3);
-      border: 2px solid #FFDEE9
-    }
-
-    .health-status {
-      font-size: 17px;
-      font-weight: 800;
-      color: #5D4037;
-      margin-top: 8px
-    }
-
-    .health-sub {
-      font-size: 13px;
-      color: #8D6E63;
-      margin-top: 6px
-    }
-
-    .advice-item {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      background: #FFF5F8;
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: 0 1px 6px rgba(255, 222, 233, .15);
-      border: 1.5px solid #FFDEE9;
-      transition: transform .15s
-    }
-
-    .advice-item:active {
-      transform: scale(.98)
-    }
-
-    .advice-icon {
-      font-size: 24px;
-      flex-shrink: 0;
-      line-height: 1.2
-    }
-
-    .advice-body h4 {
-      font-size: 14px;
-      font-weight: 700;
-      color: #5D4037;
-      margin: 0 0 4px
-    }
-
-    .advice-body p {
-      font-size: 12.5px;
-      color: #8D6E63;
-      margin: 0;
-      line-height: 1.5
-    }
-
-    .mode-tabs {
-      display: flex;
-      background: #EBF5FB;
-      border-radius: 9999px;
-      padding: 3px;
-      gap: 3px;
-      border: 2px solid #D6EAF8
-    }
-
-    .mode-tab {
-      flex: 1;
-      text-align: center;
-      padding: 8px 0;
-      border-radius: 9999px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #8D6E63;
-      cursor: pointer;
-      transition: all .25s
-    }
-
-    .mode-tab.active {
-      background: #fff;
-      color: #5B9BD5;
-      box-shadow: 0 2px 8px rgba(135, 206, 235, .2)
-    }
-
-    .sw-display {
-      font-size: 48px;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      color: #5D4037;
-      letter-spacing: 2px;
-      line-height: 1
-    }
-
-    .sw-btn {
-      width: 160px;
-      height: 160px;
-      border-radius: 9999px;
-      border: 4px solid rgba(255, 255, 255, .5);
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      transition: all .2s
-    }
-
-    .sw-btn:active {
-      transform: scale(.95)
-    }
-
-    .sw-btn.ready {
-      background: linear-gradient(135deg, #A8D8B9, #7EC8A0);
-      box-shadow: 0 6px 24px rgba(168, 216, 185, .4)
-    }
-
-    .sw-btn.running {
-      background: linear-gradient(135deg, #F0B4CC, #E88FAA);
-      box-shadow: 0 6px 24px rgba(240, 180, 204, .4);
-      animation: breathe 2.6s ease-in-out infinite
-    }
-
-    .sw-result-panel {
-      background: #F0F8FF;
-      border-radius: 24px;
-      padding: 20px;
-      box-shadow: 0 2px 12px rgba(135, 206, 235, .1);
-      border: 2px solid #D6EAF8
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 10px 14px;
-      border: 2px solid #D6EAF8;
-      border-radius: 9999px;
-      font-size: 14px;
-      color: #5D4037;
-      background: #fff;
-      transition: border-color .2s;
-      -webkit-appearance: none;
-      font-family: 'Quicksand', sans-serif
-    }
-
-    .form-input:focus {
-      outline: none;
-      border-color: #87CEEB;
-      box-shadow: 0 0 0 3px rgba(135, 206, 235, .15)
-    }
-
-    .form-label {
-      font-size: 13px;
-      font-weight: 700;
-      color: #5D4037;
-      margin-bottom: 6px;
-      display: block
-    }
-
-    /* ✅ Check-in Location UI */
-    .loc-pill {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      background: rgba(252, 243, 207, .55);
-      border: 1.5px solid rgba(222, 184, 135, .55);
-      border-radius: 9999px;
-      padding: 8px 10px;
-      font-size: 12px;
-      font-weight: 800;
-      color: #8D6E63;
-      box-shadow: 0 2px 12px rgba(222, 184, 135, .12)
-    }
-
-    .loc-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      flex: 1
-    }
-
-    .loc-pill .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 9999px;
-      background: #E8B4B8;
-      box-shadow: 0 0 0 3px rgba(232, 180, 184, .18);
-      flex-shrink: 0
-    }
-
-    .loc-text {
-      min-width: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      cursor: pointer
-    }
-
-    .loc-actions {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0
-    }
-
-    .loc-icon-btn {
-      width: 30px;
-      height: 30px;
-      border-radius: 9999px;
-      border: 1.5px solid rgba(255, 255, 255, .7);
-      background: linear-gradient(135deg, rgba(255, 222, 233, .65), rgba(214, 234, 248, .35));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 900;
-      color: #5D4037;
-      box-shadow: 0 4px 12px rgba(232, 180, 184, .14);
-      transition: transform .12s, opacity .12s
-    }
-
-    .loc-icon-btn:active {
-      transform: scale(.95);
-      opacity: .85
-    }
-
-    .loc-spin {
-      display: inline-block;
-      animation: spin .8s linear infinite
-    }
-
-    /* ✅ Calendar (月视图) */
-    .cal-shell {
-      padding: 18px 18px 10px
-    }
-
-    .cal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px
-    }
-
-    .cal-title {
-      font-size: 16px;
-      font-weight: 800;
-      color: #5D4037;
-      letter-spacing: .5px
-    }
-
-    .cal-btn {
-      width: 38px;
-      height: 38px;
-      border-radius: 9999px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #FFDEE9, #D6EAF8);
-      border: 2px solid rgba(255, 255, 255, .7);
-      box-shadow: 0 6px 18px rgba(232, 180, 184, .18);
-      transition: transform .12s
-    }
-
-    .cal-btn:active {
-      transform: scale(.95)
-    }
-
-    .cal-week {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 8px;
-      margin-top: 14px
-    }
-
-    .cal-week div {
-      font-size: 11px;
-      font-weight: 800;
-      color: #8D6E63;
-      text-align: center
-    }
-
-    .cal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 8px;
-      margin-top: 10px;
-      padding-bottom: 14px
-    }
-
-    .cal-cell {
-      background: #fff;
-      border-radius: 18px;
-      min-height: 60px;
-      padding: 8px 8px 6px;
-      box-shadow: 0 2px 10px rgba(232, 180, 184, .12);
-      border: 1.5px solid rgba(214, 234, 248, .7);
-      position: relative;
-      overflow: hidden
-    }
-
-    .cal-cell.muted {
-      opacity: .45
-    }
-
-    .cal-date {
-      font-size: 12px;
-      font-weight: 800;
-      color: #5D4037
-    }
-
-    .cal-emoji {
-      margin-top: 6px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      line-height: 1
-    }
-
-    .cal-emoji span {
-      font-size: 16px
-    }
-
-    .cal-today {
-      background: #FCF3CF;
-      border-color: #DEB887;
-      border-width: 2px
-    }
-
-    .cal-badge {
-      position: absolute;
-      top: 7px;
-      right: 8px;
-      font-size: 10px;
-      font-weight: 800;
-      color: #E88FAA;
-      background: rgba(255, 222, 233, .55);
-      padding: 2px 7px;
-      border-radius: 9999px;
-      border: 1px solid rgba(255, 255, 255, .6)
-    }
-
-    /* ✅ Calendar Modal */
-    .modal-mask {
-      position: fixed;
-      inset: 0;
-      background: rgba(93, 64, 55, .18);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9998;
-      padding: 18px
-    }
-
-    .modal-mask.show {
-      display: flex
-    }
-
-    .modal-panel {
-      width: 100%;
-      max-width: 420px;
-      max-height: 80vh;
-      overflow: auto;
-      background: #FFFBF0;
-      border: 2px solid rgba(255, 222, 233, .9);
-      border-radius: 28px;
-      box-shadow: 0 20px 60px rgba(93, 64, 55, .25);
-      animation: sheetUp .18s ease-out both
-    }
-
-    .modal-header {
-      position: sticky;
-      top: 0;
-      background: linear-gradient(135deg, rgba(255, 222, 233, .55), rgba(214, 234, 248, .35));
-      backdrop-filter: blur(6px);
-      border-bottom: 2px dashed rgba(232, 180, 184, .55);
-      padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      border-top-left-radius: 26px;
-      border-top-right-radius: 26px
-    }
-
-    .modal-title {
-      font-size: 14px;
-      font-weight: 900;
-      color: #5D4037
-    }
-
-    .modal-close {
-      width: 34px;
-      height: 34px;
-      border-radius: 9999px;
-      border: 2px solid rgba(255, 255, 255, .7);
-      background: linear-gradient(135deg, #FCF3CF, #FFDEE9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      color: #5D4037;
-      box-shadow: 0 6px 16px rgba(232, 180, 184, .18)
-    }
-
-    .modal-close:active {
-      opacity: .85;
-      transform: scale(.96)
-    }
-
-    .modal-body {
-      padding: 14px 16px 16px
-    }
-
-    .rec-card {
-      background: #fff;
-      border: 1.5px solid rgba(214, 234, 248, .8);
-      border-radius: 22px;
-      padding: 14px;
-      box-shadow: 0 2px 12px rgba(135, 206, 235, .12);
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: flex-start
-    }
-
-    .rec-meta {
-      font-size: 12px;
-      color: #8D6E63;
-      line-height: 1.55
-    }
-
-    .rec-meta b {
-      color: #5D4037
-    }
-
-    .del-btn {
-      font-size: 12px;
-      font-weight: 900;
-      color: #8D6E63;
-      background: rgba(255, 222, 233, .45);
-      border: 1.5px solid rgba(232, 180, 184, .55);
-      border-radius: 9999px;
-      padding: 6px 10px;
-      white-space: nowrap;
-      box-shadow: 0 2px 10px rgba(232, 180, 184, .12)
-    }
-
-    .del-btn:active {
-      transform: scale(.96);
-      opacity: .85
-    }
-
-    /* ✅ 隐藏 AMap 默认 Logo/版权（你要求“隐藏默认 logo 和版权信息”） */
-    .amap-logo,
-    .amap-copyright {
-      display: none !important
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>拉了吗 LogIt ♡ Chiikawa Edition</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="chiikawa_happy.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={theme:{extend:{colors:{cream:'#FFFBF0','ck-pink':'#FFDEE9','ck-blue':'#D6EAF8','ck-yellow':'#FCF3CF','ck-brown':'#5D4037'},fontFamily:{cute:['Quicksand','sans-serif']}}}}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<!-- ✅ AMap Security Config (必须在 AMap 脚本前) -->
+<script>window._AMapSecurityConfig = { securityJsCode: '66fdd546bbe4d83be54e4a838bd3d9db' };</script>
+<!-- ✅ AMap JS API 2.0 + Plugins -->
+<script src="https://webapi.amap.com/maps?v=2.0&key=76f8983290786ddae7f173405ef81903&plugin=AMap.Geolocation,AMap.PlaceSearch,AMap.Geocoder,AMap.CitySearch"></script>
+
+<style>
+*{font-family:'Quicksand',system-ui,sans-serif}
+body{background:#FFFBF0;color:#5D4037;-ms-overflow-style:none;scrollbar-width:none}
+body::-webkit-scrollbar{display:none}
+
+@keyframes breathe{
+  0%,100%{box-shadow:0 0 0 0 rgba(232,180,184,.45);transform:scale(1)}
+  50%{box-shadow:0 0 24px 8px rgba(232,180,184,.2);transform:scale(1.04)}
+}
+@keyframes pulse-ring{
+  0%{transform:scale(1);opacity:.6}
+  100%{transform:scale(2.8);opacity:0}
+}
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-6px)}
+}
+@keyframes fadeInUp{
+  from{opacity:0;transform:translateY(12px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes wiggle{
+  0%,100%{transform:rotate(0)}
+  25%{transform:rotate(-3deg)}
+  75%{transform:rotate(3deg)}
+}
+@keyframes sheetUp{
+  from{transform:translateY(18px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+@keyframes spin{
+  from{transform:rotate(0)}
+  to{transform:rotate(360deg)}
+}
+.anim-float{animation:float 3s ease-in-out infinite}
+.anim-wiggle{animation:wiggle 2s ease-in-out infinite}
+.anim-fade-in{animation:fadeInUp .45s ease-out both}
+
+.toast{
+  position:fixed;top:18%;left:50%;transform:translateX(-50%) translateY(-8px);
+  background:linear-gradient(135deg,#FFDEE9,#D6EAF8);color:#5D4037;
+  padding:14px 28px;border-radius:9999px;font-size:14px;font-weight:700;
+  box-shadow:0 8px 30px rgba(232,180,184,.35);
+  opacity:0;pointer-events:none;transition:all .35s cubic-bezier(.4,.2,.2,1);z-index:9999;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.opt-pill{transition:all .2s;border:2px solid transparent}
+.opt-pill.active{background:#D6EAF8;color:#5D4037;border-color:#87CEEB;box-shadow:0 2px 8px rgba(135,206,235,.3)}
+
+.color-dot{width:28px;height:28px;border-radius:9999px;cursor:pointer;transition:transform .15s,box-shadow .15s;border:2.5px solid transparent}
+.color-dot:hover{transform:scale(1.18)}
+.color-dot.active{border-color:#E8B4B8;box-shadow:0 0 0 3px rgba(232,180,184,.3);transform:scale(1.18)}
+
+.tab-bar{background:#FFFBF0;border-top:2px solid #FFDEE9}
+.tab-item{transition:all .3s}
+.tab-item .tab-icon{width:36px;height:36px;border-radius:9999px;display:flex;align-items:center;justify-content:center;transition:all .3s}
+.tab-item.active-tab .tab-icon{box-shadow:0 0 18px 5px rgba(255,222,233,.7)}
+.tab-item.active-tab .tab-label{color:#E8B4B8;font-weight:700}
+.tab-label{font-size:10px;color:#8D6E63;margin-top:2px;transition:color .2s}
+
+#map{width:100%;height:calc(100vh - 60px - 64px)}
+.map-loading{
+  position:absolute;inset:0;z-index:800;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(255,251,240,.92);backdrop-filter:blur(4px);transition:opacity .4s;
+}
+.map-loading.fade-out{opacity:0;pointer-events:none}
+.yaha-banner{
+  position:absolute;top:0;left:0;right:0;z-index:600;
+  text-align:center;padding:8px;
+  background:linear-gradient(135deg,rgba(252,243,207,.92),rgba(255,248,220,.92));
+  backdrop-filter:blur(4px);font-size:16px;font-weight:700;color:#8D6E63;
+  border-bottom:2px dashed #DEB887;
+}
+
+.popup-card{padding:14px 16px;font-family:'Quicksand',sans-serif}
+.popup-card h4{font-size:14px;font-weight:700;color:#5D4037;margin:0 0 4px}
+.popup-card p{font-size:12px;color:#8D6E63;margin:0 0 10px}
+.popup-nav-btn{display:inline-block;width:100%;text-align:center;padding:8px 0;border-radius:9999px;font-size:13px;font-weight:700;background:linear-gradient(135deg,#FCF3CF,#FFDEE9);color:#5D4037;cursor:pointer;border:none;font-family:'Quicksand',sans-serif}
+.popup-nav-btn:active{opacity:.85}
+
+.my-location-icon{position:relative;width:18px;height:18px}
+.my-location-icon .dot{width:18px;height:18px;background:#E8B4B8;border:3px solid #fff;border-radius:50%;box-shadow:0 0 6px rgba(232,180,184,.5);position:absolute;top:0;left:0;z-index:2}
+.my-location-icon .ring{width:18px;height:18px;border-radius:50%;background:rgba(232,180,184,.35);position:absolute;top:0;left:0;z-index:1;animation:pulse-ring 1.8s ease-out infinite}
+
+.health-card{border-radius:28px;padding:28px 24px;text-align:center;box-shadow:0 2px 16px rgba(255,222,233,.3);border:2px solid #FFDEE9}
+.health-status{font-size:17px;font-weight:800;color:#5D4037;margin-top:8px}
+.health-sub{font-size:13px;color:#8D6E63;margin-top:6px}
+.advice-item{display:flex;gap:12px;align-items:flex-start;background:#FFF5F8;border-radius:20px;padding:16px;box-shadow:0 1px 6px rgba(255,222,233,.15);border:1.5px solid #FFDEE9;transition:transform .15s}
+.advice-item:active{transform:scale(.98)}
+.advice-icon{font-size:24px;flex-shrink:0;line-height:1.2}
+.advice-body h4{font-size:14px;font-weight:700;color:#5D4037;margin:0 0 4px}
+.advice-body p{font-size:12.5px;color:#8D6E63;margin:0;line-height:1.5}
+
+.mode-tabs{display:flex;background:#EBF5FB;border-radius:9999px;padding:3px;gap:3px;border:2px solid #D6EAF8}
+.mode-tab{flex:1;text-align:center;padding:8px 0;border-radius:9999px;font-size:13px;font-weight:600;color:#8D6E63;cursor:pointer;transition:all .25s}
+.mode-tab.active{background:#fff;color:#5B9BD5;box-shadow:0 2px 8px rgba(135,206,235,.2)}
+
+.sw-display{font-size:48px;font-weight:800;font-variant-numeric:tabular-nums;color:#5D4037;letter-spacing:2px;line-height:1}
+.sw-btn{width:160px;height:160px;border-radius:9999px;border:4px solid rgba(255,255,255,.5);font-size:16px;font-weight:700;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .2s}
+.sw-btn:active{transform:scale(.95)}
+.sw-btn.ready{background:linear-gradient(135deg,#A8D8B9,#7EC8A0);box-shadow:0 6px 24px rgba(168,216,185,.4)}
+.sw-btn.running{background:linear-gradient(135deg,#F0B4CC,#E88FAA);box-shadow:0 6px 24px rgba(240,180,204,.4);animation:breathe 2.6s ease-in-out infinite}
+
+.sw-result-panel{background:#F0F8FF;border-radius:24px;padding:20px;box-shadow:0 2px 12px rgba(135,206,235,.1);border:2px solid #D6EAF8}
+
+.form-input{width:100%;padding:10px 14px;border:2px solid #D6EAF8;border-radius:9999px;font-size:14px;color:#5D4037;background:#fff;transition:border-color .2s;-webkit-appearance:none;font-family:'Quicksand',sans-serif}
+.form-input:focus{outline:none;border-color:#87CEEB;box-shadow:0 0 0 3px rgba(135,206,235,.15)}
+.form-label{font-size:13px;font-weight:700;color:#5D4037;margin-bottom:6px;display:block}
+
+.loc-pill{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(252,243,207,.55);border:1.5px solid rgba(222,184,135,.55);border-radius:9999px;padding:8px 10px;font-size:12px;font-weight:800;color:#8D6E63;box-shadow:0 2px 12px rgba(222,184,135,.12)}
+.loc-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.loc-pill .dot{width:8px;height:8px;border-radius:9999px;background:#E8B4B8;box-shadow:0 0 0 3px rgba(232,180,184,.18);flex-shrink:0}
+.loc-text{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.loc-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.loc-icon-btn{width:30px;height:30px;border-radius:9999px;border:1.5px solid rgba(255,255,255,.7);background:linear-gradient(135deg,rgba(255,222,233,.65),rgba(214,234,248,.35));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#5D4037;box-shadow:0 4px 12px rgba(232,180,184,.14);transition:transform .12s,opacity .12s}
+.loc-icon-btn:active{transform:scale(.95);opacity:.85}
+.loc-spin{display:inline-block;animation:spin .8s linear infinite}
+
+.cal-shell{padding:18px 18px 10px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cal-title{font-size:16px;font-weight:800;color:#5D4037;letter-spacing:.5px}
+.cal-btn{width:38px;height:38px;border-radius:9999px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#FFDEE9,#D6EAF8);border:2px solid rgba(255,255,255,.7);box-shadow:0 6px 18px rgba(232,180,184,.18);transition:transform .12s}
+.cal-btn:active{transform:scale(.95)}
+.cal-week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:14px}
+.cal-week div{font-size:11px;font-weight:800;color:#8D6E63;text-align:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:10px;padding-bottom:14px}
+.cal-cell{background:#fff;border-radius:18px;min-height:60px;padding:8px 8px 6px;box-shadow:0 2px 10px rgba(232,180,184,.12);border:1.5px solid rgba(214,234,248,.7);position:relative;overflow:hidden}
+.cal-cell.muted{opacity:.45}
+.cal-date{font-size:12px;font-weight:800;color:#5D4037}
+.cal-emoji{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;line-height:1}
+.cal-emoji span{font-size:16px}
+.cal-today{background:#FCF3CF;border-color:#DEB887;border-width:2px}
+.cal-badge{position:absolute;top:7px;right:8px;font-size:10px;font-weight:800;color:#E88FAA;background:rgba(255,222,233,.55);padding:2px 7px;border-radius:9999px;border:1px solid rgba(255,255,255,.6)}
+
+.modal-mask{position:fixed;inset:0;background:rgba(93,64,55,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:9998;padding:18px}
+.modal-mask.show{display:flex}
+.modal-panel{width:100%;max-width:420px;max-height:80vh;overflow:auto;background:#FFFBF0;border:2px solid rgba(255,222,233,.9);border-radius:28px;box-shadow:0 20px 60px rgba(93,64,55,.25);animation:sheetUp .18s ease-out both}
+.modal-header{position:sticky;top:0;background:linear-gradient(135deg,rgba(255,222,233,.55),rgba(214,234,248,.35));backdrop-filter:blur(6px);border-bottom:2px dashed rgba(232,180,184,.55);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-top-left-radius:26px;border-top-right-radius:26px}
+.modal-title{font-size:14px;font-weight:900;color:#5D4037}
+.modal-close{width:34px;height:34px;border-radius:9999px;border:2px solid rgba(255,255,255,.7);background:linear-gradient(135deg,#FCF3CF,#FFDEE9);display:flex;align-items:center;justify-content:center;font-weight:900;color:#5D4037;box-shadow:0 6px 16px rgba(232,180,184,.18)}
+.modal-close:active{opacity:.85;transform:scale(.96)}
+.modal-body{padding:14px 16px 16px}
+.rec-card{background:#fff;border:1.5px solid rgba(214,234,248,.8);border-radius:22px;padding:14px;box-shadow:0 2px 12px rgba(135,206,235,.12);display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.rec-meta{font-size:12px;color:#8D6E63;line-height:1.55}
+.rec-meta b{color:#5D4037}
+.del-btn{font-size:12px;font-weight:900;color:#8D6E63;background:rgba(255,222,233,.45);border:1.5px solid rgba(232,180,184,.55);border-radius:9999px;padding:6px 10px;white-space:nowrap;box-shadow:0 2px 10px rgba(232,180,184,.12)}
+.del-btn:active{transform:scale(.96);opacity:.85}
+
+/* ✅ Login Overlay */
+.login-overlay{
+  position:fixed;inset:0;z-index:10000;
+  background:linear-gradient(160deg,#FFFBF0 0%,#FFDEE9 50%,#D6EAF8 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;
+}
+.login-card{
+  width:100%;max-width:360px;
+  background:#fff;
+  border:2px solid rgba(255,222,233,.9);
+  border-radius:32px;
+  padding:32px 28px;
+  box-shadow:0 20px 60px rgba(232,180,184,.3);
+  text-align:center;
+}
+.login-title{font-size:22px;font-weight:900;color:#5D4037;margin-bottom:6px}
+.login-sub{font-size:13px;color:#8D6E63;margin-bottom:24px;line-height:1.5}
+.login-input{
+  width:100%;padding:12px 18px;
+  border:2px solid #D6EAF8;border-radius:9999px;
+  font-size:15px;color:#5D4037;background:#FFFBF0;
+  text-align:center;font-family:'Quicksand',sans-serif;
+  transition:border-color .2s;outline:none;
+  -webkit-appearance:none;
+}
+.login-input:focus{border-color:#87CEEB;box-shadow:0 0 0 3px rgba(135,206,235,.15)}
+.login-btn{
+  width:100%;padding:13px 0;margin-top:16px;
+  background:linear-gradient(135deg,#87CEEB,#B8D4E8);
+  color:#fff;font-weight:900;font-size:15px;
+  border-radius:9999px;border:none;
+  box-shadow:0 6px 20px rgba(135,206,235,.35);
+  cursor:pointer;transition:transform .15s,opacity .15s;
+  font-family:'Quicksand',sans-serif;
+}
+.login-btn:active{transform:scale(.97);opacity:.9}
+.login-err{font-size:12px;font-weight:700;color:#E88FAA;margin-top:10px;min-height:18px}
+
+.amap-logo,.amap-copyright{display:none!important}
+</style>
 </head>
-
 <body class="min-h-screen select-none">
 
-  <div id="toast" class="toast"></div>
+<div id="toast" class="toast"></div>
 
-  <!-- Login Overlay -->
-  <div id="loginOverlay"
-    style="position:fixed; inset:0; z-index:10000; background:#FFFBF0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-    <div
-      style="background:#fff; padding:30px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.1); text-align:center;">
-      <h2 style="font-size:20px; font-weight:bold; color:#5D4037;">输入昵称进入专属日记</h2>
-      <input type="text" id="loginUsername" placeholder="例如: ruifeng01"
-        style="width:100%; padding:10px; margin:15px 0; border:2px solid #D6EAF8; border-radius:10px; text-align:center;">
-      <button onclick="handleLogin()"
-        style="width:100%; padding:10px; background:#87CEEB; color:#fff; font-weight:bold; border-radius:10px;">进入日记</button>
+<!-- ✅ Login Overlay -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-card">
+    <div class="anim-float" style="margin-bottom:16px">
+      <img src="chiikawa_happy.png" alt="Chiikawa" style="width:72px;height:72px;border-radius:9999px;object-fit:cover;border:3px solid #FFDEE9;box-shadow:0 6px 20px rgba(232,180,184,.3);margin:0 auto;display:block" onerror="this.style.display='none'">
+    </div>
+    <div class="login-title">拉了吗 LogIt ♡</div>
+    <div class="login-sub">输入你的昵称，进入专属日记<br><span style="color:#E8B4B8;font-weight:700">首次使用自动注册，下次同名直接进入</span></div>
+    <input
+      type="text"
+      id="loginUsername"
+      class="login-input"
+      placeholder="例如：ruifeng01"
+      maxlength="50"
+      autocomplete="off"
+      onkeydown="if(event.key==='Enter')handleLogin()"
+    >
+    <button class="login-btn" onclick="handleLogin()">🐱 进入我的日记</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- Calendar Detail Modal -->
+<div id="calModalMask" class="modal-mask" onclick="calendarModalMaskClick(event)">
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="calModalTitle">
+    <div class="modal-header">
+      <div class="modal-title" id="calModalTitle">打卡日记</div>
+      <button class="modal-close" onclick="closeCalendarModal()" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="calModalList" class="space-y-3"></div>
+      <div id="calModalEmpty" class="text-center text-sm font-bold" style="color:#E8B4B8;display:none;padding:18px 0">这天没有记录哟</div>
     </div>
   </div>
+</div>
 
-  <!-- Calendar Detail Modal -->
-  <div id="calModalMask" class="modal-mask" onclick="calendarModalMaskClick(event)">
-    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="calModalTitle">
-      <div class="modal-header">
-        <div class="modal-title" id="calModalTitle">打卡日记</div>
-        <button class="modal-close" onclick="closeCalendarModal()" aria-label="关闭">×</button>
+<div class="max-w-md mx-auto min-h-screen shadow-xl relative flex flex-col" style="background:#FFFBF0;box-shadow:0 0 40px rgba(255,222,233,.3)">
+
+  <header class="sticky top-0 z-30 shrink-0" style="background:linear-gradient(135deg,rgba(255,251,240,.95),rgba(255,222,233,.3));backdrop-filter:blur(8px);border-bottom:2px dashed #FFDEE9">
+    <div class="flex items-center justify-between px-4 py-2 gap-2">
+      <div class="flex items-center gap-2">
+        <div class="anim-float">
+          <img src="chiikawa_happy.png" alt="Chiikawa" class="h-9 w-9 rounded-full object-cover border border-pink-200" onerror="this.style.display='none'">
+        </div>
+        <div>
+          <h1 class="text-base font-extrabold tracking-wide" style="color:#5D4037">LogIt <span style="font-size:12px;color:#E8B4B8">♡</span> 拉了吗</h1>
+          <p class="text-[10px] font-semibold" style="color:#E8B4B8" id="headerUsername">Chiikawa Edition ✧</p>
+        </div>
       </div>
-      <div class="modal-body">
-        <div id="calModalList" class="space-y-3"></div>
-        <div id="calModalEmpty" class="text-center text-sm font-bold" style="color:#E8B4B8;display:none;padding:18px 0">
-          这天没有记录哟</div>
+      <div class="flex items-center gap-2">
+        <div class="anim-float" style="animation-delay:.5s">
+          <img src="hachiware_icon.png" alt="Hachiware" class="h-8 w-8 rounded-full object-cover border border-blue-200" onerror="this.style.display='none'">
+        </div>
+        <!-- 退出登录按钮 -->
+        <button
+          id="logoutBtn"
+          onclick="handleLogout()"
+          style="display:none;padding:5px 12px;border-radius:9999px;font-size:11px;font-weight:800;color:#8D6E63;background:rgba(255,222,233,.5);border:1.5px solid rgba(232,180,184,.5);white-space:nowrap"
+        >退出</button>
       </div>
     </div>
-  </div>
+  </header>
 
-  <div class="max-w-md mx-auto min-h-screen shadow-xl relative flex flex-col"
-    style="background:#FFFBF0;box-shadow:0 0 40px rgba(255,222,233,.3)">
-
-    <header class="sticky top-0 z-30 shrink-0"
-      style="background:linear-gradient(135deg,rgba(255,251,240,.95),rgba(255,222,233,.3));backdrop-filter:blur(8px);border-bottom:2px dashed #FFDEE9">
-      <div class="flex items-center justify-center gap-3 py-3">
-        <div class="anim-float" id="headerChiikawa">
-          <img src="chiikawa_happy.png" alt="Chiikawa" class="h-9 w-9 rounded-full object-cover border border-pink-200"
-            onerror="this.style.display='none'">
-        </div>
-        <div class="text-center">
-          <h1 class="text-lg font-extrabold tracking-wide" style="color:#5D4037">LogIt <span
-              style="font-size:13px;color:#E8B4B8">♡</span> 拉了吗</h1>
-          <p class="text-[10px] font-semibold" style="color:#E8B4B8">Chiikawa Edition ✧</p>
-        </div>
-        <div class="anim-float" style="animation-delay:.5s" id="headerHachiware">
-          <img src="hachiware_icon.png" alt="Hachiware" class="h-9 w-9 rounded-full object-cover border border-blue-200"
-            onerror="this.style.display='none'">
-        </div>
+  <!-- VIEW: Checkin -->
+  <div id="view-checkin" class="flex-1 overflow-y-auto pb-24" style="background:linear-gradient(180deg,#EBF5FB 0%,#FFFBF0 40%)">
+    <main class="px-5 pt-5 pb-4 space-y-5">
+      <div class="mode-tabs" id="modeTabs">
+        <div class="mode-tab active" data-mode="manual" onclick="switchCheckinMode('manual')">✏️ 手动补录</div>
+        <div class="mode-tab" data-mode="stopwatch" onclick="switchCheckinMode('stopwatch')">⏱️ 实时计时</div>
       </div>
-    </header>
 
-    <!-- VIEW: Checkin (Hachiware blue theme) -->
-    <div id="view-checkin" class="flex-1 overflow-y-auto pb-24"
-      style="background:linear-gradient(180deg,#EBF5FB 0%,#FFFBF0 40%)">
-      <main class="px-5 pt-5 pb-4 space-y-5">
-        <div class="mode-tabs" id="modeTabs">
-          <div class="mode-tab active" data-mode="manual" onclick="switchCheckinMode('manual')">✏️ 手动补录</div>
-          <div class="mode-tab" data-mode="stopwatch" onclick="switchCheckinMode('stopwatch')">⏱️ 实时计时</div>
+      <!-- Manual mode -->
+      <div id="mode-manual" class="space-y-4">
+        <div class="loc-pill" id="manualLocPill">
+          <div class="loc-left">
+            <span class="dot"></span>
+            <span class="loc-text" id="manualLocationText" onclick="editLocation()">📍 正在获取位置...</span>
+          </div>
+          <div class="loc-actions">
+            <button class="loc-icon-btn" title="刷新定位" aria-label="刷新定位" onclick="retryLocation(event)"><span id="locRetryIcon">🔄</span></button>
+            <button class="loc-icon-btn" title="手动编辑" aria-label="手动编辑" onclick="editLocation(event)">✏️</button>
+          </div>
         </div>
 
-        <!-- Manual mode -->
-        <div id="mode-manual" class="space-y-4">
-          <div class="loc-pill" id="manualLocPill">
+        <div>
+          <label class="form-label">📅 打卡时间</label>
+          <input type="datetime-local" id="manualDatetime" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">⏰ 耗时（分钟）</label>
+          <input type="number" id="manualDuration" class="form-input" min="1" max="120" placeholder="输入分钟数" value="5">
+        </div>
+        <div>
+          <p class="form-label">✨ 形态</p>
+          <div class="flex gap-2" id="manualShapeGroup">
+            <span class="opt-pill px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#F5F0FF" data-val="soft" onclick="pickOption(this,'manualShapeGroup')">💧 稀软</span>
+            <span class="opt-pill active px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#F0FFF4" data-val="perfect" onclick="pickOption(this,'manualShapeGroup')">🍌 完美</span>
+            <span class="opt-pill px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#FFF5F5" data-val="dry" onclick="pickOption(this,'manualShapeGroup')">🪨 干燥</span>
+          </div>
+        </div>
+        <div>
+          <p class="form-label">🎨 颜色</p>
+          <div class="flex gap-3 items-center" id="colorGroup">
+            <span class="color-dot" style="background:#A0522D" onclick="pickColor(this)" title="深褐"></span>
+            <span class="color-dot active" style="background:#C4A35A" onclick="pickColor(this)" title="金黄"></span>
+            <span class="color-dot" style="background:#6B8E23" onclick="pickColor(this)" title="绿色"></span>
+            <span class="color-dot" style="background:#D2691E" onclick="pickColor(this)" title="橙褐"></span>
+            <span class="color-dot" style="background:#3B3B3B" onclick="pickColor(this)" title="深黑"></span>
+            <span class="color-dot" style="background:#CD5C5C" onclick="pickColor(this)" title="偏红"></span>
+          </div>
+        </div>
+        <button onclick="saveManualRecord()" class="w-full py-3 rounded-full text-white font-bold text-base shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#87CEEB,#B8D4E8)">
+          🐱 保存记录 ♡
+        </button>
+      </div>
+
+      <!-- Stopwatch mode -->
+      <div id="mode-stopwatch" class="hidden space-y-5">
+        <div id="swMain" class="flex flex-col items-center pt-2">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="sw-display" id="swDisplay">00:00</div>
+            <div class="anim-wiggle">
+              <img src="hachiware_drool.png" alt="Drool" class="h-10 w-10 rounded-full object-cover" onerror="this.style.display='none'">
+            </div>
+          </div>
+          <button class="sw-btn ready" id="swBtn" onclick="toggleStopwatch()">
+            <span id="swBtnEmoji" style="font-size:28px">🟢</span>
+            <span id="swBtnText" style="font-size:14px">冲啊，准备记录！</span>
+          </button>
+          <p class="text-xs mt-4 font-semibold" style="color:#8D6E63" id="swHint">点击按钮开始计时 ♡</p>
+        </div>
+        <div id="swResultPanel" class="hidden sw-result-panel space-y-4">
+          <div class="loc-pill" id="swLocPill" style="background:rgba(214,234,248,.55);border-color:rgba(135,206,235,.35)">
             <div class="loc-left">
-              <span class="dot"></span>
-              <span class="loc-text" id="manualLocationText" onclick="editLocation()">📍 正在获取位置...</span>
+              <span class="dot" style="background:#87CEEB;box-shadow:0 0 0 3px rgba(135,206,235,.15)"></span>
+              <span class="loc-text" id="swLocationText" onclick="editLocation()">📍 正在获取位置...</span>
             </div>
             <div class="loc-actions">
-              <button class="loc-icon-btn" title="刷新定位" aria-label="刷新定位" onclick="retryLocation(event)"><span
-                  id="locRetryIcon">🔄</span></button>
+              <button class="loc-icon-btn" title="刷新定位" aria-label="刷新定位" onclick="retryLocation(event)"><span id="locRetryIcon2">🔄</span></button>
               <button class="loc-icon-btn" title="手动编辑" aria-label="手动编辑" onclick="editLocation(event)">✏️</button>
             </div>
           </div>
-
-          <div>
-            <label class="form-label">📅 打卡时间</label>
-            <input type="datetime-local" id="manualDatetime" class="form-input">
+          <div class="text-center">
+            <p class="text-sm font-semibold" style="color:#8D6E63">大成功！🎉</p>
+            <p class="text-2xl font-extrabold mt-1" style="color:#5D4037" id="swResultTime">--</p>
+            <p class="text-xs mt-1" style="color:#8D6E63" id="swResultMeta"></p>
           </div>
           <div>
-            <label class="form-label">⏰ 耗时（分钟）</label>
-            <input type="number" id="manualDuration" class="form-input" min="1" max="120" placeholder="输入分钟数" value="5">
-          </div>
-          <div>
-            <p class="form-label">✨ 形态</p>
-            <div class="flex gap-2" id="manualShapeGroup">
-              <span class="opt-pill px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#F5F0FF"
-                data-val="soft" onclick="pickOption(this,'manualShapeGroup')">💧 稀软</span>
-              <span class="opt-pill active px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#F0FFF4"
-                data-val="perfect" onclick="pickOption(this,'manualShapeGroup')">🍌 完美</span>
-              <span class="opt-pill px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#FFF5F5"
-                data-val="dry" onclick="pickOption(this,'manualShapeGroup')">🪨 干燥</span>
+            <p class="form-label text-center">✨ 选择形态</p>
+            <div class="flex gap-2 justify-center" id="swShapeGroup">
+              <span class="opt-pill px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#F5F0FF" data-val="soft" onclick="pickOption(this,'swShapeGroup')">💧 稀软</span>
+              <span class="opt-pill active px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#F0FFF4" data-val="perfect" onclick="pickOption(this,'swShapeGroup')">🍌 完美</span>
+              <span class="opt-pill px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#FFF5F5" data-val="dry" onclick="pickOption(this,'swShapeGroup')">🪨 干燥</span>
             </div>
           </div>
-          <div>
-            <p class="form-label">🎨 颜色</p>
-            <div class="flex gap-3 items-center" id="colorGroup">
-              <span class="color-dot" style="background:#A0522D" onclick="pickColor(this)" title="深褐"></span>
-              <span class="color-dot active" style="background:#C4A35A" onclick="pickColor(this)" title="金黄"></span>
-              <span class="color-dot" style="background:#6B8E23" onclick="pickColor(this)" title="绿色"></span>
-              <span class="color-dot" style="background:#D2691E" onclick="pickColor(this)" title="橙褐"></span>
-              <span class="color-dot" style="background:#3B3B3B" onclick="pickColor(this)" title="深黑"></span>
-              <span class="color-dot" style="background:#CD5C5C" onclick="pickColor(this)" title="偏红"></span>
-            </div>
-          </div>
-          <button onclick="saveManualRecord()"
-            class="w-full py-3 rounded-full text-white font-bold text-base shadow-lg active:scale-95 transition-transform"
-            style="background:linear-gradient(135deg,#87CEEB,#B8D4E8)">
-            🐱 保存记录 ♡
+          <button onclick="saveStopwatchRecord()" class="w-full py-3 rounded-full text-white font-bold text-base shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#87CEEB,#B8D4E8)">
+            ✅ 确认保存 ♡
+          </button>
+          <button onclick="resetStopwatch()" class="w-full py-2.5 rounded-full font-semibold text-sm active:scale-95 transition-transform" style="background:#EBF5FB;color:#8D6E63">
+            放弃本次记录
           </button>
         </div>
-
-        <!-- Stopwatch mode -->
-        <div id="mode-stopwatch" class="hidden space-y-5">
-          <div id="swMain" class="flex flex-col items-center pt-2">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="sw-display" id="swDisplay">00:00</div>
-              <div class="anim-wiggle" id="swHachiware">
-                <img src="hachiware_drool.png" alt="Drool" class="h-10 w-10 rounded-full object-cover"
-                  onerror="this.style.display='none'">
-              </div>
-            </div>
-            <button class="sw-btn ready" id="swBtn" onclick="toggleStopwatch()">
-              <span id="swBtnEmoji" style="font-size:28px">🟢</span>
-              <span id="swBtnText" style="font-size:14px">冲啊，准备记录！</span>
-            </button>
-            <p class="text-xs mt-4 font-semibold" style="color:#8D6E63" id="swHint">点击按钮开始计时 ♡</p>
-          </div>
-          <div id="swResultPanel" class="hidden sw-result-panel space-y-4">
-            <div class="loc-pill" id="swLocPill"
-              style="background:rgba(214,234,248,.55);border-color:rgba(135,206,235,.35)">
-              <div class="loc-left">
-                <span class="dot" style="background:#87CEEB;box-shadow:0 0 0 3px rgba(135,206,235,.15)"></span>
-                <span class="loc-text" id="swLocationText" onclick="editLocation()">📍 正在获取位置...</span>
-              </div>
-              <div class="loc-actions">
-                <button class="loc-icon-btn" title="刷新定位" aria-label="刷新定位" onclick="retryLocation(event)"><span
-                    id="locRetryIcon2">🔄</span></button>
-                <button class="loc-icon-btn" title="手动编辑" aria-label="手动编辑" onclick="editLocation(event)">✏️</button>
-              </div>
-            </div>
-
-            <div class="text-center">
-              <p class="text-sm font-semibold" style="color:#8D6E63">大成功！🎉</p>
-              <p class="text-2xl font-extrabold mt-1" style="color:#5D4037" id="swResultTime">--</p>
-              <p class="text-xs mt-1" style="color:#8D6E63" id="swResultMeta"></p>
-            </div>
-            <div>
-              <p class="form-label text-center">✨ 选择形态</p>
-              <div class="flex gap-2 justify-center" id="swShapeGroup">
-                <span class="opt-pill px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#F5F0FF"
-                  data-val="soft" onclick="pickOption(this,'swShapeGroup')">💧 稀软</span>
-                <span class="opt-pill active px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#F0FFF4"
-                  data-val="perfect" onclick="pickOption(this,'swShapeGroup')">🍌 完美</span>
-                <span class="opt-pill px-4 py-1.5 rounded-full text-sm cursor-pointer" style="background:#FFF5F5"
-                  data-val="dry" onclick="pickOption(this,'swShapeGroup')">🪨 干燥</span>
-              </div>
-            </div>
-            <button onclick="saveStopwatchRecord()"
-              class="w-full py-3 rounded-full text-white font-bold text-base shadow-lg active:scale-95 transition-transform"
-              style="background:linear-gradient(135deg,#87CEEB,#B8D4E8)">
-              ✅ 确认保存 ♡
-            </button>
-            <button onclick="resetStopwatch()"
-              class="w-full py-2.5 rounded-full font-semibold text-sm active:scale-95 transition-transform"
-              style="background:#EBF5FB;color:#8D6E63">
-              放弃本次记录
-            </button>
-          </div>
-        </div>
-
-        <!-- Charts -->
-        <section class="space-y-4">
-          <div class="rounded-3xl p-5 shadow-sm" style="background:#F0F8FF;border:2px solid #D6EAF8">
-            <h3 class="text-sm font-bold mb-3" style="color:#5D4037">🍩 历史形态占比</h3>
-            <div class="relative" style="max-height:260px"><canvas id="pieChart"></canvas></div>
-          </div>
-          <div class="rounded-3xl p-5 shadow-sm" style="background:#F0F8FF;border:2px solid #D6EAF8">
-            <h3 class="text-sm font-bold mb-3" style="color:#5D4037">📈 近 7 天耗时趋势</h3>
-            <div class="relative" style="max-height:240px"><canvas id="lineChart"></canvas></div>
-          </div>
-        </section>
-      </main>
-    </div>
-
-    <!-- VIEW: Map (Usagi yellow theme) -->
-    <div id="view-map" class="hidden flex-1 relative" style="background:#FCF3CF">
-      <div class="yaha-banner">
-        <span class="anim-wiggle inline-block">🐰</span> ヤ哈！找公厕啦！
       </div>
-      <div id="mapLoading" class="map-loading">
-        <div class="anim-float">
-          <img src="usagi_marker.png" class="h-12 w-12 rounded-full object-cover shadow-md"
-            onerror="this.style.display='none'">
+
+      <!-- Charts -->
+      <section class="space-y-4">
+        <div class="rounded-3xl p-5 shadow-sm" style="background:#F0F8FF;border:2px solid #D6EAF8">
+          <h3 class="text-sm font-bold mb-3" style="color:#5D4037">🍩 历史形态占比</h3>
+          <div class="relative" style="max-height:260px"><canvas id="pieChart"></canvas></div>
         </div>
-        <p class="text-sm font-bold mt-2" style="color:#8D6E63">正在定位…</p>
-      </div>
-      <div id="map"></div>
-    </div>
-
-    <!-- VIEW: Calendar (Month View) -->
-    <div id="view-calendar" class="hidden flex-1 overflow-y-auto pb-24"
-      style="background:linear-gradient(180deg,#FFF5EE 0%,#FFFBF0 40%)">
-      <div class="cal-shell">
-        <div class="cal-header">
-          <button class="cal-btn" aria-label="上个月" onclick="calendarPrevMonth()">
-            <span style="font-size:18px;font-weight:900;color:#5D4037">‹</span>
-          </button>
-
-          <div class="cal-title" id="calMonthTitle">----</div>
-
-          <button class="cal-btn" aria-label="下个月" onclick="calendarNextMonth()">
-            <span style="font-size:18px;font-weight:900;color:#5D4037">›</span>
-          </button>
+        <div class="rounded-3xl p-5 shadow-sm" style="background:#F0F8FF;border:2px solid #D6EAF8">
+          <h3 class="text-sm font-bold mb-3" style="color:#5D4037">📈 近 7 天耗时趋势</h3>
+          <div class="relative" style="max-height:240px"><canvas id="lineChart"></canvas></div>
         </div>
-
-        <div class="cal-week">
-          <div>日</div>
-          <div>一</div>
-          <div>二</div>
-          <div>三</div>
-          <div>四</div>
-          <div>五</div>
-          <div>六</div>
-        </div>
-
-        <div class="cal-grid" id="calGrid"></div>
-
-        <div class="text-center text-[11px] font-semibold" style="color:#8D6E63;padding-bottom:6px">
-          🍌/💧/🪨 = 当天有打卡记录（支持多次）
-        </div>
-      </div>
-    </div>
-
-    <!-- VIEW: Health (Chiikawa pink theme) -->
-    <div id="view-health" class="hidden flex-1 overflow-y-auto pb-24"
-      style="background:linear-gradient(180deg,#FFF0F5 0%,#FFFBF0 40%)">
-      <main class="px-5 pt-6 pb-4 space-y-5">
-        <div class="health-card" id="healthCard" style="background:linear-gradient(135deg,#FFF0F5,#FFDEE9)">
-          <div id="healthAvatar" class="flex justify-center"></div>
-          <div class="health-status" id="healthStatus">分析中…</div>
-          <div class="health-sub" id="healthSub">正在读取你的打卡数据</div>
-        </div>
-        <div>
-          <h3 class="text-sm font-bold mb-3 flex items-center gap-1.5" style="color:#5D4037">
-            💕 AI 医生建议
-          </h3>
-          <div id="adviceList" class="space-y-3">
-            <p class="text-sm text-center py-8" style="color:#E8B4B8">切换到此页面后自动分析 ♡</p>
-          </div>
-        </div>
-        <!-- ✅ Data Vault (Import / Export) — appended UI only -->
-        <div class="rounded-3xl p-5 shadow-sm bg-slate-50"
-          style="border:2px solid rgba(214,234,248,.9);background:rgba(240,248,255,.65)">
-          <div class="flex items-center justify-between gap-3">
-            <div class="text-sm font-extrabold" style="color:#5D4037">⚙️ 数据保险箱</div>
-            <div class="text-[11px] font-bold" style="color:#8D6E63">导入/导出本机数据</div>
-          </div>
-          <div class="mt-4 grid grid-cols-2 gap-3">
-            <button onclick="exportData()"
-              class="w-full py-2.5 rounded-full text-white font-extrabold text-sm shadow-lg active:scale-95 transition-transform"
-              style="background:linear-gradient(135deg,#A8D8B9,#7EC8A0)">
-              ⬇️ 导出备份
-            </button>
-            <button onclick="document.getElementById('importFileInput').click()"
-              class="w-full py-2.5 rounded-full text-white font-extrabold text-sm shadow-lg active:scale-95 transition-transform"
-              style="background:linear-gradient(135deg,#F5B97A,#F0A24A)">
-              ⬆️ 恢复数据
-            </button>
-          </div>
-          <input id="importFileInput" type="file" accept=".json" style="display:none" onchange="importData(event)">
-          <p class="mt-3 text-[11px] font-semibold" style="color:#8D6E63;line-height:1.4">
-            提示：导出的是后端数据库中的 <span style="color:#E8B4B8;font-weight:800">打卡记录</span>。
-          </p>
-        </div>
-
-        <div class="text-center pt-2 pb-4">
-          <p class="text-[11px]" style="color:#E8B4B8">ℹ️ 以上建议仅供参考，不构成医疗诊断</p>
-        </div>
-      </main>
-    </div>
-
+      </section>
+    </main>
   </div>
 
-  <!-- Bottom Nav (4 Tabs) -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 tab-bar" style="box-shadow:0 -4px 20px rgba(255,222,233,.2)">
-    <div class="max-w-md mx-auto flex justify-around py-2">
-      <div class="tab-item flex flex-col items-center cursor-pointer" data-view="map" onclick="switchView('map',this)">
-        <div class="tab-icon">
-          <img src="hachiware_icon.png" class="h-7 w-7 rounded-full object-cover mb-1" alt="Nav"
-            onerror="this.style.display='none'">
-        </div>
-        <span class="tab-label">找厕所</span>
+  <!-- VIEW: Map -->
+  <div id="view-map" class="hidden flex-1 relative" style="background:#FCF3CF">
+    <div class="yaha-banner">
+      <span class="anim-wiggle inline-block">🐰</span> ヤ哈！找公厕啦！
+    </div>
+    <div id="mapLoading" class="map-loading">
+      <div class="anim-float">
+        <img src="usagi_marker.png" class="h-12 w-12 rounded-full object-cover shadow-md" onerror="this.style.display='none'">
       </div>
+      <p class="text-sm font-bold mt-2" style="color:#8D6E63">正在定位…</p>
+    </div>
+    <div id="map"></div>
+  </div>
 
-      <div class="tab-item active-tab flex flex-col items-center cursor-pointer" data-view="checkin"
-        onclick="switchView('checkin',this)">
-        <div class="tab-icon">
-          <img src="hachiware_icon.png" class="h-7 w-7 rounded-full object-cover mb-1" alt="Nav"
-            onerror="this.style.display='none'">
-        </div>
-        <span class="tab-label">打卡</span>
+  <!-- VIEW: Calendar -->
+  <div id="view-calendar" class="hidden flex-1 overflow-y-auto pb-24" style="background:linear-gradient(180deg,#FFF5EE 0%,#FFFBF0 40%)">
+    <div class="cal-shell">
+      <div class="cal-header">
+        <button class="cal-btn" aria-label="上个月" onclick="calendarPrevMonth()">
+          <span style="font-size:18px;font-weight:900;color:#5D4037">‹</span>
+        </button>
+        <div class="cal-title" id="calMonthTitle">----</div>
+        <button class="cal-btn" aria-label="下个月" onclick="calendarNextMonth()">
+          <span style="font-size:18px;font-weight:900;color:#5D4037">›</span>
+        </button>
       </div>
-
-      <div class="tab-item flex flex-col items-center cursor-pointer" data-view="calendar"
-        onclick="switchView('calendar',this)">
-        <div class="tab-icon" style="background:linear-gradient(135deg,rgba(252,243,207,.9),rgba(255,222,233,.35))">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M7 4.5C7 3.67 7.67 3 8.5 3H19a2 2 0 0 1 2 2v15.5a.5.5 0 0 1-.79.41l-1.6-1.1a2 2 0 0 0-2.24 0l-1.6 1.1a.5.5 0 0 1-.56 0l-1.6-1.1a2 2 0 0 0-2.24 0l-1.6 1.1A.5.5 0 0 1 6 20.5V5a.5.5 0 0 1 1 0v-.5Z"
-              fill="#E8B4B8" />
-            <path d="M5 4a2 2 0 0 1 2-2h1.5a1 1 0 0 1 0 2H7a.5.5 0 0 0-.5.5V20a1 1 0 0 1-2 0V4Z" fill="#87CEEB" />
-            <path d="M10 7.5h8" stroke="#5D4037" stroke-width="1.8" stroke-linecap="round" />
-            <path d="M10 11h8" stroke="#5D4037" stroke-width="1.8" stroke-linecap="round" />
-            <path d="M10 14.5h6" stroke="#5D4037" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-        </div>
-        <span class="tab-label">日历</span>
+      <div class="cal-week">
+        <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
       </div>
-
-      <div class="tab-item flex flex-col items-center cursor-pointer" data-view="health"
-        onclick="switchView('health',this)">
-        <div class="tab-icon">
-          <img src="chiikawa_happy.png" class="h-7 w-7 rounded-full object-cover mb-1" alt="Nav"
-            onerror="this.style.display='none'">
-        </div>
-        <span class="tab-label">我的健康</span>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="text-center text-[11px] font-semibold" style="color:#8D6E63;padding-bottom:6px">
+        🍌/💧/🪨 = 当天有打卡记录（支持多次）
       </div>
     </div>
-  </nav>
+  </div>
 
-  <script>
-    /* ==========================================================
-     * Data Layer — API Backend
-     * ========================================================== */
-    const API_BASE = 'https://rflogit.pythonanywhere.com/api';
+  <!-- VIEW: Health -->
+  <div id="view-health" class="hidden flex-1 overflow-y-auto pb-24" style="background:linear-gradient(180deg,#FFF0F5 0%,#FFFBF0 40%)">
+    <main class="px-5 pt-6 pb-4 space-y-5">
+      <div class="health-card" id="healthCard" style="background:linear-gradient(135deg,#FFF0F5,#FFDEE9)">
+        <div id="healthAvatar" class="flex justify-center"></div>
+        <div class="health-status" id="healthStatus">分析中…</div>
+        <div class="health-sub" id="healthSub">正在读取你的打卡数据</div>
+      </div>
+      <div>
+        <h3 class="text-sm font-bold mb-3 flex items-center gap-1.5" style="color:#5D4037">💕 AI 医生建议</h3>
+        <div id="adviceList" class="space-y-3">
+          <p class="text-sm text-center py-8" style="color:#E8B4B8">切换到此页面后自动分析 ♡</p>
+        </div>
+      </div>
+      <div class="rounded-3xl p-5 shadow-sm" style="border:2px solid rgba(214,234,248,.9);background:rgba(240,248,255,.65)">
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-sm font-extrabold" style="color:#5D4037">⚙️ 数据保险箱</div>
+          <div class="text-[11px] font-bold" style="color:#8D6E63">导入/导出本机数据</div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <button onclick="exportData()" class="w-full py-2.5 rounded-full text-white font-extrabold text-sm shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#A8D8B9,#7EC8A0)">⬇️ 导出备份</button>
+          <button onclick="document.getElementById('importFileInput').click()" class="w-full py-2.5 rounded-full text-white font-extrabold text-sm shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#F5B97A,#F0A24A)">⬆️ 恢复数据</button>
+        </div>
+        <input id="importFileInput" type="file" accept=".json" style="display:none" onchange="importData(event)">
+        <p class="mt-3 text-[11px] font-semibold" style="color:#8D6E63;line-height:1.4">
+          提示：导出的是后端数据库中的 <span style="color:#E8B4B8;font-weight:800">打卡记录</span>。
+        </p>
+      </div>
+      <div class="text-center pt-2 pb-4">
+        <p class="text-[11px]" style="color:#E8B4B8">ℹ️ 以上建议仅供参考，不构成医疗诊断</p>
+      </div>
+    </main>
+  </div>
 
-    /* ========== Login / Auth ========== */
-    var currentUserId = localStorage.getItem('logit_uid') || null;
+</div>
 
-    if (currentUserId) {
-      document.getElementById('loginOverlay').style.display = 'none';
+<!-- Bottom Nav -->
+<nav class="fixed bottom-0 left-0 right-0 z-40 tab-bar" style="box-shadow:0 -4px 20px rgba(255,222,233,.2)">
+  <div class="max-w-md mx-auto flex justify-around py-2">
+    <div class="tab-item flex flex-col items-center cursor-pointer" data-view="map" onclick="switchView('map',this)">
+      <div class="tab-icon">
+        <img src="hachiware_icon.png" class="h-7 w-7 rounded-full object-cover mb-1" alt="Nav" onerror="this.style.display='none'">
+      </div>
+      <span class="tab-label">找厕所</span>
+    </div>
+    <div class="tab-item active-tab flex flex-col items-center cursor-pointer" data-view="checkin" onclick="switchView('checkin',this)">
+      <div class="tab-icon">
+        <img src="hachiware_icon.png" class="h-7 w-7 rounded-full object-cover mb-1" alt="Nav" onerror="this.style.display='none'">
+      </div>
+      <span class="tab-label">打卡</span>
+    </div>
+    <div class="tab-item flex flex-col items-center cursor-pointer" data-view="calendar" onclick="switchView('calendar',this)">
+      <div class="tab-icon" style="background:linear-gradient(135deg,rgba(252,243,207,.9),rgba(255,222,233,.35))">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 4.5C7 3.67 7.67 3 8.5 3H19a2 2 0 0 1 2 2v15.5a.5.5 0 0 1-.79.41l-1.6-1.1a2 2 0 0 0-2.24 0l-1.6 1.1a.5.5 0 0 1-.56 0l-1.6-1.1a2 2 0 0 0-2.24 0l-1.6 1.1A.5.5 0 0 1 6 20.5V5a.5.5 0 0 1 1 0v-.5Z" fill="#E8B4B8"/>
+          <path d="M5 4a2 2 0 0 1 2-2h1.5a1 1 0 0 1 0 2H7a.5.5 0 0 0-.5.5V20a1 1 0 0 1-2 0V4Z" fill="#87CEEB"/>
+          <path d="M10 7.5h8" stroke="#5D4037" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M10 11h8" stroke="#5D4037" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M10 14.5h6" stroke="#5D4037" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="tab-label">日历</span>
+    </div>
+    <div class="tab-item flex flex-col items-center cursor-pointer" data-view="health" onclick="switchView('health',this)">
+      <div class="tab-icon">
+        <img src="chiikawa_happy.png" class="h-7 w-7 rounded-full object-cover mb-1" alt="Nav" onerror="this.style.display='none'">
+      </div>
+      <span class="tab-label">我的健康</span>
+    </div>
+  </div>
+</nav>
+
+<script>
+/* ==========================================================
+ * Constants & State
+ * ========================================================== */
+var API_BASE = 'https://rflogit.pythonanywhere.com/api';
+var currentUserId = null;
+var currentUsername = '';
+var cachedRecords = [];
+var SHAPE_MAP = {
+  soft:    { label: '💧 稀软', color: '#C8A2C8', emoji: '💧' },
+  perfect: { label: '🍌 完美', color: '#A8D8B9', emoji: '🍌' },
+  dry:     { label: '🪨 干燥', color: '#A8C8E8', emoji: '🪨' }
+};
+
+/* ==========================================================
+ * Login / Auth
+ * ========================================================== */
+
+function showLoginOverlay() {
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('logoutBtn').style.display = 'none';
+  document.getElementById('headerUsername').textContent = 'Chiikawa Edition ✧';
+  setTimeout(function(){ var el = document.getElementById('loginUsername'); if(el) el.focus(); }, 100);
+}
+
+function hideLoginOverlay() {
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('logoutBtn').style.display = 'inline-block';
+  document.getElementById('headerUsername').textContent = '👋 ' + currentUsername;
+}
+
+async function handleLogin() {
+  var usernameEl = document.getElementById('loginUsername');
+  var errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+
+  var username = usernameEl.value.trim();
+  if (!username) {
+    errEl.textContent = '昵称不能为空哦 (•́ω•̀)';
+    return;
+  }
+  if (username.length > 50) {
+    errEl.textContent = '昵称最多 50 个字符';
+    return;
+  }
+
+  try {
+    var resp = await fetch(API_BASE + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username })
+    });
+
+    var json = await resp.json();
+
+    if (json.code === 200) {
+      currentUserId = String(json.user_id);
+      currentUsername = json.username;
+      localStorage.setItem('logit_user_id', currentUserId);
+      localStorage.setItem('logit_username', currentUsername);
+      hideLoginOverlay();
+      await fetchRecords();
+      refreshCharts();
+      if (calendarInited) renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
+    } else {
+      errEl.textContent = json.message || '登录失败，请稍后再试';
     }
+  } catch(e) {
+    console.error('handleLogin error:', e);
+    errEl.textContent = '网络连接失败，请检查网络或服务器 (；；)';
+  }
+}
 
-    async function handleLogin() {
-      var name = document.getElementById('loginUsername').value.trim();
-      if (!name) return alert('请输入昵称');
+function handleLogout() {
+  if (!confirm('确定要退出登录吗？')) return;
+  currentUserId = null;
+  currentUsername = '';
+  cachedRecords = [];
+  localStorage.removeItem('logit_user_id');
+  localStorage.removeItem('logit_username');
+  document.getElementById('loginUsername').value = '';
+  document.getElementById('loginErr').textContent = '';
+  refreshCharts();
+  showLoginOverlay();
+  showToast('👋 已退出登录');
+}
 
-      try {
-        var resp = await fetch(API_BASE + '/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: name })
-        });
-        var json = await resp.json();
+/* ==========================================================
+ * Data Layer — API Backend
+ * ========================================================== */
 
-        if (resp.ok && json.data) {
-          currentUserId = String(json.data.id);
-          localStorage.setItem('logit_uid', currentUserId);
-          document.getElementById('loginOverlay').style.display = 'none';
+function loadRecords() { return cachedRecords; }
 
-          await fetchRecords();
-          refreshCharts();
-        } else {
-          alert(json.message || '登录失败，请检查后端是否已更新');
-        }
-      } catch (e) {
-        console.error('handleLogin error:', e);
-        alert('网络请求失败！请确认：\n1. 后端 app.py 已更新并包含 /api/login 路由\n2. PythonAnywhere 已点击 Reload\n\n错误详情: ' + e.message);
-      }
-    }
-
-    var cachedRecords = [];
-    var SHAPE_MAP = {
-      soft: { label: '💧 稀软', color: '#C8A2C8', emoji: '💧' },
-      perfect: { label: '🍌 完美', color: '#A8D8B9', emoji: '🍌' },
-      dry: { label: '🪨 干燥', color: '#A8C8E8', emoji: '🪨' }
-    };
-
-    /* 同步返回缓存（兼容所有现有渲染调用） */
-    function loadRecords() { return cachedRecords; }
-
-    /* 异步从后端拉取数据，映射为前端格式后存入缓存 */
-    async function fetchRecords() {
-      try {
-        var resp = await fetch(API_BASE + '/records', {
-          headers: { 'X-User-Id': currentUserId }
-        });
-        var json = await resp.json();
-        if (json.code === 200 && Array.isArray(json.data)) {
-          cachedRecords = json.data.map(function (r) {
-            var ts = r.record_time ? new Date(r.record_time).getTime() : Date.now();
-            var dateStr = r.record_time ? r.record_time.substring(0, 10) : fmtDate(new Date());
-            return {
-              id: ts,
-              dbId: r.id,
-              date: dateStr,
-              duration: r.duration_minutes || 0,
-              shape: r.shape || 'perfect',
-              color: r.color || '',
-              location: r.location || ''
-            };
-          });
-        } else { cachedRecords = []; }
-      } catch (e) {
-        console.error('fetchRecords error:', e);
-        cachedRecords = [];
-      }
-      return cachedRecords;
-    }
-    function fmtDate(d) {
-      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    }
-    function shortLabel(s) { var p = s.split('-'); return parseInt(p[1]) + '/' + parseInt(p[2]); }
-
-    /* ensureSeedData 已移除 — 数据来自后端 API */
-
-    /* ==========================================================
-     * UI Interaction
-     * ========================================================== */
-    function pickOption(el, gid) {
-      document.querySelectorAll('#' + gid + ' .opt-pill').forEach(function (p) { p.classList.remove('active'); });
-      el.classList.add('active');
-    }
-    function pickColor(el) {
-      document.querySelectorAll('#colorGroup .color-dot').forEach(function (d) { d.classList.remove('active'); });
-      el.classList.add('active');
-    }
-    function getSelectedVal(gid) {
-      var a = document.querySelector('#' + gid + ' .opt-pill.active');
-      return a ? a.getAttribute('data-val') : null;
-    }
-    function getSelectedColor() {
-      var a = document.querySelector('#colorGroup .color-dot.active');
-      return a ? (a.style.backgroundColor || a.getAttribute('style').replace('background:', '').replace(';', '').trim()) : null;
-    }
-    function showToast(msg) {
-      var t = document.getElementById('toast'); t.textContent = msg;
-      t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2000);
-    }
-
-    /* ==========================================================
-     * View Switching
-     * ========================================================== */
-    var currentView = 'checkin';
-    var mapInited = false;
-    var calendarInited = false;
-    var ALL_VIEWS = ['checkin', 'map', 'calendar', 'health'];
-
-    function switchView(view, tabEl) {
-      document.querySelectorAll('.tab-item').forEach(function (i) { i.classList.remove('active-tab'); });
-      if (tabEl) tabEl.classList.add('active-tab');
-      currentView = view;
-      ALL_VIEWS.forEach(function (v) {
-        var el = document.getElementById('view-' + v);
-        if (el) el.classList.add('hidden');
+async function fetchRecords() {
+  if (!currentUserId) return;
+  try {
+    var resp = await fetch(API_BASE + '/records', {
+      headers: { 'X-User-Id': currentUserId }
+    });
+    var json = await resp.json();
+    if (json.code === 200 && Array.isArray(json.data)) {
+      cachedRecords = json.data.map(function(r) {
+        var ts = r.record_time ? new Date(r.record_time).getTime() : Date.now();
+        var dateStr = r.record_time ? r.record_time.substring(0, 10) : fmtDate(new Date());
+        return {
+          id: ts,
+          dbId: r.id,
+          date: dateStr,
+          duration: r.duration_minutes || 0,
+          shape: r.shape || 'perfect',
+          color: r.color || '',
+          location: r.location || ''
+        };
       });
-      var target = document.getElementById('view-' + view);
-      if (target) target.classList.remove('hidden');
+    } else { cachedRecords = []; }
+  } catch(e) {
+    console.error('fetchRecords error:', e);
+    cachedRecords = [];
+  }
+  return cachedRecords;
+}
 
-      if (view === 'map') { initMap(); }
-      if (view === 'health') { generateHealthReport(); }
-      if (view === 'calendar') { initCalendar(); }
-      if (view === 'checkin') { warmupCheckinLocation(); }
+function fmtDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function shortLabel(s) { var p = s.split('-'); return parseInt(p[1]) + '/' + parseInt(p[2]); }
+
+/* ==========================================================
+ * UI Interaction
+ * ========================================================== */
+function pickOption(el, gid) {
+  document.querySelectorAll('#'+gid+' .opt-pill').forEach(function(p){ p.classList.remove('active'); });
+  el.classList.add('active');
+}
+function pickColor(el) {
+  document.querySelectorAll('#colorGroup .color-dot').forEach(function(d){ d.classList.remove('active'); });
+  el.classList.add('active');
+}
+function getSelectedVal(gid) {
+  var a = document.querySelector('#'+gid+' .opt-pill.active');
+  return a ? a.getAttribute('data-val') : null;
+}
+function getSelectedColor() {
+  var a = document.querySelector('#colorGroup .color-dot.active');
+  return a ? (a.style.backgroundColor || a.getAttribute('style').replace('background:','').replace(';','').trim()) : null;
+}
+function showToast(msg) {
+  var t = document.getElementById('toast'); t.textContent = msg;
+  t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 2000);
+}
+
+/* ==========================================================
+ * View Switching
+ * ========================================================== */
+var currentView = 'checkin';
+var mapInited = false;
+var calendarInited = false;
+var ALL_VIEWS = ['checkin', 'map', 'calendar', 'health'];
+
+function switchView(view, tabEl) {
+  document.querySelectorAll('.tab-item').forEach(function(i){ i.classList.remove('active-tab'); });
+  if (tabEl) tabEl.classList.add('active-tab');
+  currentView = view;
+  ALL_VIEWS.forEach(function(v) {
+    var el = document.getElementById('view-' + v);
+    if (el) el.classList.add('hidden');
+  });
+  var target = document.getElementById('view-' + view);
+  if (target) target.classList.remove('hidden');
+  if (view === 'map') { initMap(); }
+  if (view === 'health') { generateHealthReport(); }
+  if (view === 'calendar') { initCalendar(); }
+  if (view === 'checkin') { warmupCheckinLocation(); }
+}
+
+/* ==========================================================
+ * Check-in Location (AMap.Geolocation) + Retry + Manual Edit
+ * ========================================================== */
+var lastCheckinLocation = { text: '未知位置', ts: 0 };
+var manualOverrideLocation = '';
+var LOC_TTL_MS = 1000 * 60 * 8;
+var locLoading = false;
+
+function setCheckinLocationText(text, opts) {
+  opts = opts || {};
+  var t1 = document.getElementById('manualLocationText');
+  var t2 = document.getElementById('swLocationText');
+  var prefix = '📍 ';
+  var showText = prefix + (text || '未知位置');
+  if (opts.loading) {
+    showText = prefix + '正在重新定位... <span class="loc-spin">⟳</span>';
+  }
+  if (t1) { if (opts.loading) t1.innerHTML = showText; else t1.textContent = showText; }
+  if (t2) { if (opts.loading) t2.innerHTML = showText; else t2.textContent = showText; }
+}
+
+function warmupCheckinLocation() {
+  if (manualOverrideLocation) { setCheckinLocationText(manualOverrideLocation); return; }
+  setCheckinLocationText('正在获取位置...');
+  fetchCheckinLocation(false, function(){ });
+}
+
+function retryLocation(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (e && e.stopPropagation) e.stopPropagation();
+  manualOverrideLocation = '';
+  if (locLoading) return;
+  locLoading = true;
+  setCheckinLocationText('', { loading: true });
+  fetchCheckinLocation(true, function(addr){
+    locLoading = false;
+    setCheckinLocationText(addr || '未知位置');
+  });
+}
+
+function editLocation(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (e && e.stopPropagation) e.stopPropagation();
+  var current = manualOverrideLocation || lastCheckinLocation.text || '';
+  var val = prompt('定位失败？请手动输入当前位置：', current && current !== '未知位置' ? current : '');
+  if (val == null) return;
+  val = String(val).trim();
+  if (!val) { manualOverrideLocation = ''; setCheckinLocationText('未知位置'); return; }
+  manualOverrideLocation = val;
+  setCheckinLocationText(val);
+  showToast('✏️ 位置已手动更新');
+}
+
+function getLocationForSave(cb) {
+  if (manualOverrideLocation) { cb && cb(manualOverrideLocation); return; }
+  if (lastCheckinLocation.text && lastCheckinLocation.text !== '未知位置' && (Date.now() - lastCheckinLocation.ts < LOC_TTL_MS)) {
+    cb && cb(lastCheckinLocation.text); return;
+  }
+  fetchCheckinLocation(false, function(addr){ cb && cb(addr || '未知位置'); });
+}
+
+/* ===== 三层降级定位：浏览器原生 → AMap插件 → IP定位 ===== */
+var geoInstance = null; // 复用同一个 AMap.Geolocation 实例
+
+function fetchCheckinLocation(force, cb) {
+  // 如果不强制刷新且缓存还有效，直接返回缓存
+  if (!force && lastCheckinLocation.text && lastCheckinLocation.text !== '未知位置'
+      && (Date.now() - lastCheckinLocation.ts < LOC_TTL_MS)) {
+    setCheckinLocationText(lastCheckinLocation.text);
+    cb && cb(lastCheckinLocation.text);
+    return;
+  }
+
+  // 第一层：浏览器原生定位 + AMap 逆地理编码
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        reverseGeocode(pos.coords.longitude, pos.coords.latitude, cb);
+      },
+      function(err) {
+        console.warn('浏览器原生定位失败:', err.message);
+        tryAMapGeolocation(cb);
+      },
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
+    );
+  } else {
+    tryAMapGeolocation(cb);
+  }
+}
+
+// AMap 逆地理编码：经纬度 → 中文地址
+function reverseGeocode(lng, lat, cb) {
+  try {
+    var geocoder = new AMap.Geocoder();
+    geocoder.getAddress([lng, lat], function(status, result) {
+      if (status === 'complete' && result.regeocode) {
+        var addr = result.regeocode.formattedAddress || '未知位置';
+        lastCheckinLocation = { text: addr, ts: Date.now() };
+        if (!manualOverrideLocation) setCheckinLocationText(addr);
+        cb && cb(manualOverrideLocation || addr);
+      } else {
+        tryAMapGeolocation(cb);
+      }
+    });
+  } catch(e) {
+    tryAMapGeolocation(cb);
+  }
+}
+
+// 第二层：AMap Geolocation 插件
+function tryAMapGeolocation(cb) {
+  try {
+    if (typeof AMap === 'undefined' || !AMap.Geolocation) {
+      tryIPFallback(cb);
+      return;
     }
-
-    /* ==========================================================
-     * Check-in Location (AMap.Geolocation) + Retry + Manual Edit
-     * ========================================================== */
-    var lastCheckinLocation = { text: '未知位置', ts: 0 };
-    var manualOverrideLocation = ''; // 用户手动输入
-    var LOC_TTL_MS = 1000 * 60 * 8; // 8 分钟内复用
-    var locLoading = false;
-
-    function setCheckinLocationText(text, opts) {
-      opts = opts || {};
-      var t1 = document.getElementById('manualLocationText');
-      var t2 = document.getElementById('swLocationText');
-
-      var prefix = '📍 ';
-      var showText = prefix + (text || '未知位置');
-      if (opts.loading) {
-        showText = prefix + '正在重新定位... ';
-        // 小转圈（纯字符也行，避免引入新图片）
-        showText += '<span class="loc-spin">⟳</span>';
-      }
-
-      if (t1) {
-        if (opts.loading) t1.innerHTML = showText; else t1.textContent = showText;
-      }
-      if (t2) {
-        if (opts.loading) t2.innerHTML = showText; else t2.textContent = showText;
-      }
-    }
-
-    function warmupCheckinLocation() {
-      // 进入打卡视图时预热（不阻塞）
-      if (manualOverrideLocation) {
-        setCheckinLocationText(manualOverrideLocation);
-        return;
-      }
-      setCheckinLocationText('正在获取位置...');
-      fetchCheckinLocation(false, function () { /* no-op */ });
-    }
-
-    function retryLocation(e) {
-      if (e && e.preventDefault) e.preventDefault();
-      if (e && e.stopPropagation) e.stopPropagation();
-
-      // 手动覆盖存在时，也允许强制刷新：先清空覆盖，再去定位
-      manualOverrideLocation = '';
-
-      if (locLoading) return;
-      locLoading = true;
-      setCheckinLocationText('', { loading: true });
-
-      fetchCheckinLocation(true, function (addr) {
-        locLoading = false;
-        setCheckinLocationText(addr || '未知位置');
+    if (!geoInstance) {
+      geoInstance = new AMap.Geolocation({
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 30000,
+        convert: true,
+        showButton: false,
+        showMarker: false,
+        showCircle: false
       });
     }
-
-    function editLocation(e) {
-      if (e && e.preventDefault) e.preventDefault();
-      if (e && e.stopPropagation) e.stopPropagation();
-
-      var current = manualOverrideLocation || lastCheckinLocation.text || '';
-      var val = prompt('定位失败？请手动输入当前位置：', current && current !== '未知位置' ? current : '');
-      if (val == null) return; // cancel
-      val = String(val).trim();
-      if (!val) {
-        manualOverrideLocation = '';
-        setCheckinLocationText('未知位置');
-        return;
-      }
-
-      manualOverrideLocation = val;
-      setCheckinLocationText(val);
-      showToast('✏️ 位置已手动更新');
-    }
-
-    function getLocationForSave(cb) {
-      // 保存时：优先手动覆盖，其次缓存定位，其次尝试定位（失败=未知）
-      if (manualOverrideLocation) {
-        cb && cb(manualOverrideLocation);
-        return;
-      }
-
-      if (lastCheckinLocation.text && lastCheckinLocation.text !== '未知位置' && (Date.now() - lastCheckinLocation.ts < LOC_TTL_MS)) {
-        cb && cb(lastCheckinLocation.text);
-        return;
-      }
-
-      fetchCheckinLocation(false, function (addr) {
-        cb && cb(addr || '未知位置');
-      });
-    }
-
-    function fetchCheckinLocation(force, cb) {
-      try {
-        if (!force) {
-          if (Date.now() - lastCheckinLocation.ts < LOC_TTL_MS && lastCheckinLocation.text && lastCheckinLocation.text !== '未知位置') {
-            setCheckinLocationText(lastCheckinLocation.text);
-            cb && cb(lastCheckinLocation.text);
-            return;
-          }
+    geoInstance.getCurrentPosition(function(status, result) {
+      if (status === 'complete' && result) {
+        var addr = result.formattedAddress || '';
+        if (!addr && result.addressComponent) {
+          var ac = result.addressComponent;
+          addr = (ac.province||'') + (ac.city||'') + (ac.district||'') + (ac.township||'');
         }
+        addr = addr || '未知位置';
+        lastCheckinLocation = { text: addr, ts: Date.now() };
+        if (!manualOverrideLocation) setCheckinLocationText(addr);
+        cb && cb(manualOverrideLocation || addr);
+      } else {
+        tryIPFallback(cb);
+      }
+    });
+  } catch(e) {
+    tryIPFallback(cb);
+  }
+}
 
-        // AMap 完全失败也能继续：留给 editLocation 手动输入
-        if (typeof AMap === 'undefined' || !AMap.Geolocation) {
-          lastCheckinLocation = { text: '未知位置', ts: Date.now() };
-          setCheckinLocationText(manualOverrideLocation || '未知位置');
-          cb && cb(manualOverrideLocation || '未知位置');
-          return;
-        }
-
-        var geolocation = new AMap.Geolocation({
-          enableHighAccuracy: true,
-          timeout: 8000,
-          maximumAge: 0,
-          convert: true,
-          showButton: false,
-          showMarker: false,
-          showCircle: false
-        });
-
-        geolocation.getCurrentPosition(function (status, result) {
-          if (status === 'complete' && result) {
-            var addr = '';
-            if (result.formattedAddress) addr = result.formattedAddress;
-            else if (result.addressComponent) {
-              var ac = result.addressComponent;
-              addr = (ac.province || '') + (ac.city || '') + (ac.district || '') + (ac.township || '');
-              addr = addr || '未知位置';
-            } else addr = '未知位置';
-
-            lastCheckinLocation = { text: addr, ts: Date.now() };
-            // 如果用户未手动覆盖，则同步 UI
-            if (!manualOverrideLocation) setCheckinLocationText(addr);
-            cb && cb(manualOverrideLocation || addr);
-          } else {
-            lastCheckinLocation = { text: '未知位置', ts: Date.now() };
-            setCheckinLocationText(manualOverrideLocation || '未知位置');
-            cb && cb(manualOverrideLocation || '未知位置');
-          }
-        });
-      } catch (e) {
-        console.warn('fetchCheckinLocation error:', e);
+// 第三层：IP 定位兜底（城市级别）
+function tryIPFallback(cb) {
+  try {
+    var citySearch = new AMap.CitySearch();
+    citySearch.getLocalCity(function(status, result) {
+      if (status === 'complete' && result && result.city) {
+        var addr = (result.province || '') + result.city + '（IP定位）';
+        lastCheckinLocation = { text: addr, ts: Date.now() };
+        if (!manualOverrideLocation) setCheckinLocationText(addr);
+        cb && cb(manualOverrideLocation || addr);
+      } else {
         lastCheckinLocation = { text: '未知位置', ts: Date.now() };
         setCheckinLocationText(manualOverrideLocation || '未知位置');
         cb && cb(manualOverrideLocation || '未知位置');
       }
-    }
+    });
+  } catch(e) {
+    lastCheckinLocation = { text: '未知位置', ts: Date.now() };
+    setCheckinLocationText(manualOverrideLocation || '未知位置');
+    cb && cb(manualOverrideLocation || '未知位置');
+  }
+}
 
-    /* ==========================================================
-     * Calendar (Month View) + Detail Modal + Delete
-     * ========================================================== */
-    var calCursor = new Date();
-    var calModalDateKey = null;
+/* ==========================================================
+ * Calendar (Month View) + Detail Modal + Delete
+ * ========================================================== */
+var calCursor = new Date();
+var calModalDateKey = null;
 
-    function initCalendar() {
-      if (!calendarInited) calendarInited = true;
-      calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth(), 1);
-      renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
-    }
+function initCalendar() {
+  if (!calendarInited) calendarInited = true;
+  calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth(), 1);
+  renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
+}
 
-    function calendarPrevMonth() {
-      calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() - 1, 1);
-      renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
-    }
-    function calendarNextMonth() {
-      calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() + 1, 1);
-      renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
-    }
+function calendarPrevMonth() {
+  calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() - 1, 1);
+  renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
+}
+function calendarNextMonth() {
+  calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() + 1, 1);
+  renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
+}
 
-    function groupRecordsByDate(records) {
-      var map = {};
-      records.forEach(function (r) {
-        if (!r || !r.date) return;
-        if (!map[r.date]) map[r.date] = [];
-        map[r.date].push(r);
-      });
-      Object.keys(map).forEach(function (k) {
-        map[k].sort(function (a, b) { return (b.id || 0) - (a.id || 0); });
-      });
-      return map;
-    }
+function groupRecordsByDate(records) {
+  var map = {};
+  records.forEach(function(r){
+    if (!r || !r.date) return;
+    if (!map[r.date]) map[r.date] = [];
+    map[r.date].push(r);
+  });
+  Object.keys(map).forEach(function(k){
+    map[k].sort(function(a,b){ return (b.id||0) - (a.id||0); });
+  });
+  return map;
+}
 
-    function pad2(n) { return String(n).padStart(2, '0'); }
-    function timeHHMM(ts) {
-      var d = new Date(ts);
-      return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
-    }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function timeHHMM(ts){ var d = new Date(ts); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
 
-    function openCalendarModal(dateKey) {
-      calModalDateKey = dateKey;
-      var mask = document.getElementById('calModalMask');
-      var title = document.getElementById('calModalTitle');
-      if (title) {
-        var p = dateKey.split('-');
-        title.textContent = parseInt(p[1]) + '月' + parseInt(p[2]) + '日的打卡日记';
+function openCalendarModal(dateKey) {
+  calModalDateKey = dateKey;
+  var mask = document.getElementById('calModalMask');
+  var title = document.getElementById('calModalTitle');
+  if (title) {
+    var p = dateKey.split('-');
+    title.textContent = parseInt(p[1]) + '月' + parseInt(p[2]) + '日的打卡日记';
+  }
+  renderCalendarModalList(dateKey);
+  if (mask) mask.classList.add('show');
+}
+
+function closeCalendarModal() {
+  var mask = document.getElementById('calModalMask');
+  if (mask) mask.classList.remove('show');
+  calModalDateKey = null;
+}
+
+function calendarModalMaskClick(e) {
+  if (e.target && e.target.id === 'calModalMask') closeCalendarModal();
+}
+
+function shapeEmoji(shape){ return (SHAPE_MAP[shape] && SHAPE_MAP[shape].emoji) ? SHAPE_MAP[shape].emoji : '✨'; }
+
+function colorNameFromHex(c){
+  if(!c) return '—';
+  var map = {
+    '#A0522D':'深褐','#C4A35A':'金黄','#6B8E23':'绿色',
+    '#D2691E':'橙褐','#3B3B3B':'深黑','#CD5C5C':'偏红'
+  };
+  var key = String(c).toUpperCase();
+  if (key.indexOf('RGB') === 0) return '自定义';
+  return map[key] || '自定义';
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);
+  });
+}
+
+function renderCalendarModalList(dateKey) {
+  var listEl = document.getElementById('calModalList');
+  var emptyEl = document.getElementById('calModalEmpty');
+  if (!listEl || !emptyEl) return;
+  listEl.innerHTML = '';
+  var records = loadRecords();
+  var dayRecs = records.filter(function(r){ return r && r.date === dateKey; })
+    .sort(function(a,b){ return (b.id||0) - (a.id||0); });
+  if (dayRecs.length === 0) { emptyEl.style.display = 'block'; return; }
+  emptyEl.style.display = 'none';
+  dayRecs.forEach(function(r){
+    var wrap = document.createElement('div');
+    wrap.className = 'rec-card';
+    var meta = document.createElement('div');
+    meta.className = 'rec-meta';
+    var dur = (r.duration != null) ? r.duration : '—';
+    var shp = r.shape || '—';
+    var color = r.color || '—';
+    var loc = r.location || '未知位置';
+    meta.innerHTML =
+      '<div style="font-size:13px;font-weight:900;color:#5D4037;margin-bottom:6px">' +
+        shapeEmoji(shp) + ' <span style="margin-left:4px">' + timeHHMM(r.id||Date.now()) + '</span>' +
+      '</div>' +
+      '<div><b>耗时：</b>' + dur + ' 分钟</div>' +
+      '<div><b>形态：</b>' + shapeEmoji(shp) + '（' + (SHAPE_MAP[shp]?SHAPE_MAP[shp].label:shp) + '）</div>' +
+      '<div><b>颜色：</b><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:9999px;background:' + color + ';border:1px solid rgba(93,64,55,.15)"></span>' + colorNameFromHex(color) + '</span></div>' +
+      '<div><b>地点：</b>📍 ' + escapeHtml(loc) + '</div>';
+    var btn = document.createElement('button');
+    btn.className = 'del-btn';
+    btn.textContent = '🗑️ 抹除';
+    btn.onclick = function(){ deleteRecordById(r.dbId); };
+    wrap.appendChild(meta);
+    wrap.appendChild(btn);
+    listEl.appendChild(wrap);
+  });
+}
+
+async function deleteRecordById(id) {
+  if (!confirm('小章鱼温馨提醒：确定要抹除这条记录吗？删了就找不回了哦！')) return;
+  try {
+    var resp = await fetch(API_BASE + '/records/' + id, {
+      method: 'DELETE',
+      headers: { 'X-User-Id': currentUserId }
+    });
+    if (resp.ok) {
+      showToast('✨ 记录已彻底抹除');
+      await fetchRecords();
+      refreshCharts();
+      if (calendarInited) renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
+      if (calModalDateKey) renderCalendarModalList(calModalDateKey);
+    } else {
+      showToast('❌ 删除失败，服务器傲娇了');
+    }
+  } catch(e) {
+    console.error('delete error:', e);
+    showToast('❌ 网络失联，检查一下服务器');
+  }
+}
+
+function renderCalendar(year, monthIndex) {
+  var title = document.getElementById('calMonthTitle');
+  if (title) title.textContent = year + '年' + (monthIndex + 1) + '月';
+  var grid = document.getElementById('calGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  var records = loadRecords();
+  var byDate = groupRecordsByDate(records);
+  var first = new Date(year, monthIndex, 1);
+  var last = new Date(year, monthIndex + 1, 0);
+  var daysInMonth = last.getDate();
+  var startDow = first.getDay();
+  var totalCells = 42;
+  var today = new Date();
+  var todayKey = fmtDate(today);
+  for (var i = 0; i < totalCells; i++) {
+    var cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    var dayNum = i - startDow + 1;
+    var cellDate = new Date(year, monthIndex, dayNum);
+    var inMonth = (dayNum >= 1 && dayNum <= daysInMonth);
+    if (!inMonth) cell.classList.add('muted');
+    var dateKey = fmtDate(cellDate);
+    if (dateKey === todayKey) cell.classList.add('cal-today');
+    var top = document.createElement('div');
+    top.className = 'cal-date';
+    top.textContent = cellDate.getDate();
+    cell.appendChild(top);
+    var emojiWrap = document.createElement('div');
+    emojiWrap.className = 'cal-emoji';
+    var list = byDate[dateKey] || [];
+    if (list.length > 0) {
+      var maxShow = 4;
+      for (var k = 0; k < Math.min(maxShow, list.length); k++) {
+        var sp = document.createElement('span');
+        sp.textContent = shapeEmoji(list[k].shape);
+        emojiWrap.appendChild(sp);
       }
-      renderCalendarModalList(dateKey);
-      if (mask) mask.classList.add('show');
-    }
-
-    function closeCalendarModal() {
-      var mask = document.getElementById('calModalMask');
-      if (mask) mask.classList.remove('show');
-      calModalDateKey = null;
-    }
-
-    function calendarModalMaskClick(e) {
-      if (e.target && e.target.id === 'calModalMask') closeCalendarModal();
-    }
-
-    function shapeEmoji(shape) {
-      return (SHAPE_MAP[shape] && SHAPE_MAP[shape].emoji) ? SHAPE_MAP[shape].emoji : '✨';
-    }
-
-    function colorNameFromHex(c) {
-      if (!c) return '—';
-      var map = {
-        '#A0522D': '深褐',
-        '#C4A35A': '金黄',
-        '#6B8E23': '绿色',
-        '#D2691E': '橙褐',
-        '#3B3B3B': '深黑',
-        '#CD5C5C': '偏红'
-      };
-      var key = String(c).toUpperCase();
-      if (key.indexOf('RGB') === 0) return '自定义';
-      return map[key] || '自定义';
-    }
-
-    function renderCalendarModalList(dateKey) {
-      var listEl = document.getElementById('calModalList');
-      var emptyEl = document.getElementById('calModalEmpty');
-      if (!listEl || !emptyEl) return;
-
-      listEl.innerHTML = '';
-
-      var records = loadRecords();
-      var dayRecs = records.filter(function (r) { return r && r.date === dateKey; })
-        .sort(function (a, b) { return (b.id || 0) - (a.id || 0); });
-
-      if (dayRecs.length === 0) {
-        emptyEl.style.display = 'block';
-        return;
+      if (list.length > maxShow) {
+        var badge = document.createElement('div');
+        badge.className = 'cal-badge';
+        badge.textContent = '+' + (list.length - maxShow);
+        cell.appendChild(badge);
       }
-      emptyEl.style.display = 'none';
-
-      dayRecs.forEach(function (r) {
-        var wrap = document.createElement('div');
-        wrap.className = 'rec-card';
-
-        var meta = document.createElement('div');
-        meta.className = 'rec-meta';
-
-        var dur = (r.duration != null) ? r.duration : '—';
-        var shp = r.shape || '—';
-        var color = r.color || '—';
-        var loc = r.location || '未知位置';
-
-        meta.innerHTML =
-          '<div style="font-size:13px;font-weight:900;color:#5D4037;margin-bottom:6px">' +
-          shapeEmoji(shp) + ' <span style="margin-left:4px">' + timeHHMM(r.id || Date.now()) + '</span>' +
-          '</div>' +
-          '<div><b>耗时：</b>' + dur + ' 分钟</div>' +
-          '<div><b>形态：</b>' + shapeEmoji(shp) + '（' + (SHAPE_MAP[shp] ? SHAPE_MAP[shp].label : shp) + '）</div>' +
-          '<div><b>颜色：</b><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:9999px;background:' + color + ';border:1px solid rgba(93,64,55,.15)"></span>' + colorNameFromHex(color) + '</span></div>' +
-          '<div><b>地点：</b>📍 ' + escapeHtml(loc) + '</div>';
-
-        var btn = document.createElement('button');
-        btn.className = 'del-btn';
-        btn.textContent = '🗑️ 抹除';
-        btn.onclick = function () { deleteRecordById(r.dbId); };
-
-        wrap.appendChild(meta);
-        wrap.appendChild(btn);
-
-        listEl.appendChild(wrap);
-      });
+      cell.style.cursor = 'pointer';
+      cell.onclick = (function(key){ return function(){ openCalendarModal(key); }; })(dateKey);
     }
-
-    async function deleteRecordById(id) {
-      // 增加一个浏览器的弹窗确认，防止手滑误删
-      if (!confirm("小章鱼温馨提醒：确定要抹除这条记录吗？删了就找不回了哦！")) {
-        return;
-      }
-
-      try {
-        // 向 Python 发送 DELETE 请求，URL 末尾带上这条记录的专属 id
-        var resp = await fetch(API_BASE + '/records/' + id, {
-          method: 'DELETE',
-          headers: { 'X-User-Id': currentUserId }
-        });
-
-        if (resp.ok) {
-          showToast('✨ 记录已彻底抹除');
-
-          // 1. 重新从后端拉取最新数据
-          await fetchRecords();
-          // 2. 刷新图表
-          refreshCharts();
-          // 3. 刷新日历视图底图
-          if (calendarInited) {
-            renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
-          }
-          // 4. 最关键的一步：刷新当前打开的弹窗列表
-          if (calModalDateKey) {
-            renderCalendarModalList(calModalDateKey);
-          }
-        } else {
-          showToast('❌ 删除失败，服务器傲娇了');
-        }
-      } catch (e) {
-        console.error('delete error:', e);
-        showToast('❌ 网络失联，检查一下服务器');
-      }
-    }
-
-    function renderCalendar(year, monthIndex) {
-      var title = document.getElementById('calMonthTitle');
-      if (title) title.textContent = year + '年' + (monthIndex + 1) + '月';
-
-      var grid = document.getElementById('calGrid');
-      if (!grid) return;
-      grid.innerHTML = '';
-
-      var records = loadRecords();
-      var byDate = groupRecordsByDate(records);
-
-      var first = new Date(year, monthIndex, 1);
-      var last = new Date(year, monthIndex + 1, 0);
-      var daysInMonth = last.getDate();
-      var startDow = first.getDay();
-      var totalCells = 42;
-
-      var today = new Date();
-      var todayKey = fmtDate(today);
-
-      for (var i = 0; i < totalCells; i++) {
-        var cell = document.createElement('div');
-        cell.className = 'cal-cell';
-
-        var dayNum = i - startDow + 1;
-        var cellDate = new Date(year, monthIndex, dayNum);
-        var inMonth = (dayNum >= 1 && dayNum <= daysInMonth);
-        if (!inMonth) cell.classList.add('muted');
-
-        var dateKey = fmtDate(cellDate);
-        if (dateKey === todayKey) cell.classList.add('cal-today');
-
-        var top = document.createElement('div');
-        top.className = 'cal-date';
-        top.textContent = cellDate.getDate();
-        cell.appendChild(top);
-
-        var emojiWrap = document.createElement('div');
-        emojiWrap.className = 'cal-emoji';
-
-        var list = byDate[dateKey] || [];
-        if (list.length > 0) {
-          var maxShow = 4;
-          for (var k = 0; k < Math.min(maxShow, list.length); k++) {
-            var sp = document.createElement('span');
-            sp.textContent = shapeEmoji(list[k].shape);
-            emojiWrap.appendChild(sp);
-          }
-          if (list.length > maxShow) {
-            var badge = document.createElement('div');
-            badge.className = 'cal-badge';
-            badge.textContent = '+' + (list.length - maxShow);
-            cell.appendChild(badge);
-          }
-
-          cell.style.cursor = 'pointer';
-          cell.onclick = (function (key) { return function () { openCalendarModal(key); }; })(dateKey);
-        }
-
-        cell.appendChild(emojiWrap);
-        grid.appendChild(cell);
-      }
-    }
-
-    /* ==========================================================
-     * Checkin Mode Switching
-     * ========================================================== */
-    var checkinMode = 'manual';
-
-    function switchCheckinMode(mode) {
-      checkinMode = mode;
-      document.querySelectorAll('#modeTabs .mode-tab').forEach(function (t) {
-        t.classList.toggle('active', t.getAttribute('data-mode') === mode);
-      });
-      document.getElementById('mode-manual').classList.toggle('hidden', mode !== 'manual');
-      document.getElementById('mode-stopwatch').classList.toggle('hidden', mode !== 'stopwatch');
-      if (mode === 'manual') { fillDefaultDatetime(); }
-
-      warmupCheckinLocation();
-    }
-
-    function fillDefaultDatetime() {
-      var now = new Date();
-      var y = now.getFullYear();
-      var mo = String(now.getMonth() + 1).padStart(2, '0');
-      var d = String(now.getDate()).padStart(2, '0');
-      var h = String(now.getHours()).padStart(2, '0');
-      var mi = String(now.getMinutes()).padStart(2, '0');
-      document.getElementById('manualDatetime').value = y + '-' + mo + '-' + d + 'T' + h + ':' + mi;
-    }
-
-    /* ==========================================================
-     * Manual Save (with location)
-     * ========================================================== */
-    async function saveManualRecord() {
-      var addr = await new Promise(function (resolve) {
-        getLocationForSave(function (a) { resolve(a); });
-      });
-
-      var dt = document.getElementById('manualDatetime').value;
-      var dur = parseInt(document.getElementById('manualDuration').value);
-      var shp = getSelectedVal('manualShapeGroup');
-      var color = getSelectedColor() || '#C4A35A';
-
-      if (!dt) { showToast('⚠️ 请选择打卡时间'); return; }
-      if (!dur || dur < 1) { showToast('⚠️ 请输入有效的耗时'); return; }
-      if (!shp) { showToast('⚠️ 请选择形态'); return; }
-
-      try {
-        var resp = await fetch(API_BASE + '/records', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUserId },
-          body: JSON.stringify({
-            record_time: dt,
-            duration_minutes: dur,
-            shape: shp,
-            color: color,
-            location: addr || '未知位置'
-          })
-        });
-        if (resp.status === 201) {
-          showToast('✅ 记录已保存 ♡');
-          await fetchRecords();
-          refreshCharts();
-          if (calendarInited) renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
-          fillDefaultDatetime();
-          document.getElementById('manualDuration').value = '5';
-        } else {
-          var err = await resp.json().catch(function () { return {}; });
-          showToast('⚠️ ' + (err.message || '保存失败'));
-        }
-      } catch (e) {
-        console.error('saveManualRecord error:', e);
-        showToast('⚠️ 网络请求失败，请检查后端服务');
-      }
-    }
-
-    /* ==========================================================
-     * Stopwatch
-     * ========================================================== */
-    var swRunning = false;
-    var swInterval = null;
-    var swStartTime = null;
-    var swElapsed = 0;
-    var swEndDate = null;
-
-    function toggleStopwatch() {
-      if (!swRunning) { startStopwatch(); } else { stopStopwatch(); }
-    }
-
-    function startStopwatch() {
-      swRunning = true;
-      swStartTime = Date.now();
-      swElapsed = 0;
-      var btn = document.getElementById('swBtn');
-      btn.className = 'sw-btn running';
-      document.getElementById('swBtnEmoji').textContent = '🔴';
-      document.getElementById('swBtnText').textContent = '大成功，完成！';
-      document.getElementById('swHint').textContent = '计时进行中… ♡';
-      document.getElementById('swResultPanel').classList.add('hidden');
-      document.getElementById('swMain').classList.remove('hidden');
-
-      warmupCheckinLocation();
-
-      swInterval = setInterval(function () {
-        swElapsed = Math.floor((Date.now() - swStartTime) / 1000);
-        var m = String(Math.floor(swElapsed / 60)).padStart(2, '0');
-        var s = String(swElapsed % 60).padStart(2, '0');
-        document.getElementById('swDisplay').textContent = m + ':' + s;
-      }, 200);
-    }
-
-    function stopStopwatch() {
-      swRunning = false;
-      clearInterval(swInterval);
-      swInterval = null;
-      swEndDate = new Date();
-      var durMin = Math.max(1, Math.round(swElapsed / 60));
-
-      var btn = document.getElementById('swBtn');
-      btn.className = 'sw-btn ready';
-      document.getElementById('swBtnEmoji').textContent = '🟢';
-      document.getElementById('swBtnText').textContent = '冲啊，准备记录！';
-      document.getElementById('swDisplay').textContent = '00:00';
-      document.getElementById('swHint').textContent = '点击按钮开始计时 ♡';
-
-      var m = Math.floor(swElapsed / 60);
-      var s = swElapsed % 60;
-      document.getElementById('swResultTime').textContent = m + ' 分 ' + s + ' 秒';
-      document.getElementById('swResultMeta').textContent = '结束于 ' + swEndDate.getHours().toString().padStart(2, '0') + ':' + swEndDate.getMinutes().toString().padStart(2, '0') + ' · 约 ' + durMin + ' 分钟';
-
-      document.getElementById('swResultPanel').classList.remove('hidden');
-      document.querySelectorAll('#swShapeGroup .opt-pill').forEach(function (p) {
-        p.classList.toggle('active', p.getAttribute('data-val') === 'perfect');
-      });
-
-      document.getElementById('swResultPanel').dataset.duration = durMin;
-      document.getElementById('swResultPanel').dataset.endTime = swEndDate.getTime();
-
-      warmupCheckinLocation();
-    }
-
-    async function saveStopwatchRecord() {
-      var panel = document.getElementById('swResultPanel');
-      var dur = parseInt(panel.dataset.duration);
-      var endTime = parseInt(panel.dataset.endTime);
-      var shp = getSelectedVal('swShapeGroup');
-      if (!shp) { showToast('⚠️ 请选择形态'); return; }
-
-      var addr = await new Promise(function (resolve) {
-        getLocationForSave(function (a) { resolve(a); });
-      });
-
-      var dateObj = new Date(endTime);
-      var color = getSelectedColor() || '#C4A35A';
-      var recordTime = dateObj.getFullYear() + '-' +
-        String(dateObj.getMonth() + 1).padStart(2, '0') + '-' +
-        String(dateObj.getDate()).padStart(2, '0') + 'T' +
-        String(dateObj.getHours()).padStart(2, '0') + ':' +
-        String(dateObj.getMinutes()).padStart(2, '0');
-
-      try {
-        var resp = await fetch(API_BASE + '/records', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUserId },
-          body: JSON.stringify({
-            record_time: recordTime,
-            duration_minutes: dur,
-            shape: shp,
-            color: color,
-            location: addr || '未知位置'
-          })
-        });
-        if (resp.status === 201) {
-          showToast('✅ 计时记录已保存 ♡');
-          await fetchRecords();
-          refreshCharts();
-          if (calendarInited) renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
-          panel.classList.add('hidden');
-        } else {
-          var err = await resp.json().catch(function () { return {}; });
-          showToast('⚠️ ' + (err.message || '保存失败'));
-        }
-      } catch (e) {
-        console.error('saveStopwatchRecord error:', e);
-        showToast('⚠️ 网络请求失败，请检查后端服务');
-      }
-    }
-
-    function resetStopwatch() {
-      document.getElementById('swResultPanel').classList.add('hidden');
-      showToast('🗑️ 已放弃本次记录');
-    }
-
-    /* ==========================================================
-     * Charts (Morandi Pastels)
-     * ========================================================== */
-    var pieInst = null, lineInst = null;
-
-    function refreshCharts() {
-      var recs = loadRecords();
-      renderPie(recs);
-      renderLine(recs);
-    }
-
-    function renderPie(recs) {
-      var c = { soft: 0, perfect: 0, dry: 0 };
-      recs.forEach(function (r) { if (c.hasOwnProperty(r.shape)) c[r.shape]++; });
-      var labels = [], data = [], colors = [];
-      Object.keys(SHAPE_MAP).forEach(function (k) {
-        labels.push(SHAPE_MAP[k].label); data.push(c[k]); colors.push(SHAPE_MAP[k].color);
-      });
-      if (pieInst) {
-        pieInst.data.labels = labels; pieInst.data.datasets[0].data = data;
-        pieInst.data.datasets[0].backgroundColor = colors; pieInst.update(); return;
-      }
-      pieInst = new Chart(document.getElementById('pieChart'), {
-        type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 3, borderColor: '#FFFBF0', hoverOffset: 8 }] },
-        options: {
-          responsive: true, maintainAspectRatio: true, cutout: '55%',
-          plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, font: { size: 12, family: 'Quicksand' }, color: '#5D4037' } } },
-          animation: { animateRotate: true, animateScale: true }
-        }
-      });
-    }
-
-    function renderLine(recs) {
-      var today = new Date(), labels = [], keys = [];
-      for (var i = 6; i >= 0; i--) { var d = new Date(today); d.setDate(d.getDate() - i); var k = fmtDate(d); keys.push(k); labels.push(shortLabel(k)); }
-      var m = {}; keys.forEach(function (k) { m[k] = { t: 0, n: 0 }; });
-      recs.forEach(function (r) { if (m[r.date]) { m[r.date].t += r.duration; m[r.date].n++; } });
-      var data = keys.map(function (k) { return m[k].n > 0 ? Math.round(m[k].t / m[k].n) : 0; });
-      if (lineInst) { lineInst.data.labels = labels; lineInst.data.datasets[0].data = data; lineInst.update(); return; }
-      lineInst = new Chart(document.getElementById('lineChart'), {
-        type: 'line',
-        data: {
-          labels: labels, datasets: [{
-            label: '耗时（分钟）', data: data, fill: true,
-            backgroundColor: 'rgba(200,162,200,0.15)', borderColor: '#C8A2C8',
-            pointBackgroundColor: '#E8B4B8', pointRadius: 5, pointHoverRadius: 7, tension: 0.4, borderWidth: 2.5
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: true,
-          scales: {
-            y: { beginAtZero: true, ticks: { stepSize: 5, font: { size: 11, family: 'Quicksand' }, color: '#8D6E63' }, grid: { color: 'rgba(232,180,184,0.1)' } },
-            x: { ticks: { font: { size: 11, family: 'Quicksand' }, color: '#8D6E63' }, grid: { display: false } }
-          },
-          plugins: { legend: { display: false } }, animation: { duration: 1200, easing: 'easeOutQuart' }
-        }
-      });
-    }
-
-    /* ==========================================================
-     * AMap Map (Usagi Theme)
-     * ========================================================== */
-    var amap = null;
-    var myLocMarker = null;
-    var toiletMarkers = [];
-    var infoWin = null;
-
-    var FALLBACK_LNG = 116.397428;
-    var FALLBACK_LAT = 39.90923;
-
-    function initMap() {
-      if (mapInited) {
-        setTimeout(function () { try { amap && amap.resize(); } catch (e) { } }, 120);
-        return;
-      }
-      mapInited = true;
-
-      amap = new AMap.Map('map', {
-        zoom: 16,
-        center: [FALLBACK_LNG, FALLBACK_LAT],
-        viewMode: '2D',
-        mapStyle: 'amap://styles/macaron'
-      });
-
-      infoWin = new AMap.InfoWindow({
-        isCustom: true,
-        offset: new AMap.Pixel(0, -36)
-      });
-
-      locateUserByAMap();
-    }
-
-    function locateUserByAMap() {
-      var loading = document.getElementById('mapLoading');
-
-      var geolocation = new AMap.Geolocation({
-        enableHighAccuracy: true,
-        timeout: 8000,
-        maximumAge: 0,
-        convert: true,
-        showButton: false,
-        showMarker: false,
-        showCircle: false,
-        panToLocation: false,
-        zoomToAccuracy: false
-      });
-
-      geolocation.getCurrentPosition(function (status, result) {
-        if (status === 'complete' && result && result.position) {
-          var lng = result.position.lng;
-          var lat = result.position.lat;
-          placeUserAndSearch(lat, lng);
-          hideMapLoading(loading);
-        } else {
-          console.warn('AMap 定位失败:', result);
-          showToast('📍 定位失败，已切换到天安门演示');
-          placeUserAndSearch(FALLBACK_LAT, FALLBACK_LNG);
-          hideMapLoading(loading);
-        }
-      });
-    }
-
-    function hideMapLoading(el) {
-      el.classList.add('fade-out');
-      setTimeout(function () { el.style.display = 'none'; }, 400);
-    }
-
-    function createMyLocationMarkerContent() {
-      var div = document.createElement('div');
-      div.className = 'my-location-icon';
-      div.innerHTML = '<div class="ring"></div><div class="dot"></div>';
-      return div;
-    }
-
-    function clearToiletMarkers() {
-      toiletMarkers.forEach(function (m) { amap.remove(m); });
-      toiletMarkers = [];
-      try { infoWin && infoWin.close(); } catch (e) { }
-    }
-
-    function placeUserAndSearch(lat, lng) {
-      var center = [lng, lat];
-      amap.setZoomAndCenter(16, center, true);
-
-      clearToiletMarkers();
-      if (myLocMarker) { amap.remove(myLocMarker); myLocMarker = null; }
-
-      myLocMarker = new AMap.Marker({
-        position: center,
-        content: createMyLocationMarkerContent(),
-        anchor: 'center',
-        zIndex: 999
-      });
-      amap.add(myLocMarker);
-
-      searchToiletsAround(lat, lng);
-    }
-
-    function createUsagiMarkerContent() {
-      var wrap = document.createElement('div');
-      wrap.style.width = '36px';
-      wrap.style.height = '36px';
-      wrap.style.transform = 'translate(-18px, -36px)';
-      wrap.innerHTML = '<img src="usagi_marker.png" style="width:36px;height:36px;border-radius:9999px;object-fit:cover;box-shadow:0 6px 18px rgba(232,180,184,.25)" onerror="this.style.display=\'none\'">';
-      return wrap;
-    }
-
-    function escapeHtml(s) {
-      return String(s || '').replace(/[&<>"']/g, function (c) {
-        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' }[c]);
-      });
-    }
-
-    function searchToiletsAround(lat, lng) {
-      var placeSearch = new AMap.PlaceSearch({
-        pageSize: 20,
-        type: '200300|200301|200302'
-      });
-
-      var center = new AMap.LngLat(lng, lat);
-
-      placeSearch.searchNearBy('公共厕所|洗手间|卫生间', center, 1000, function (status, result) {
-        if (status !== 'complete' || !result || !result.poiList || !result.poiList.pois) {
-          console.warn('PlaceSearch 失败:', status, result);
-          showToast('😢 周边搜索失败');
-          return;
-        }
-
-        var pois = result.poiList.pois;
-        if (!pois.length) {
-          showToast('🐰 附近 1km 没搜到公厕（可能权限/网络问题）');
-          return;
-        }
-
-        pois.forEach(function (poi) {
-          if (!poi || !poi.location) return;
-
-          var poiLng = poi.location.lng;
-          var poiLat = poi.location.lat;
-          var name = poi.name || '公共厕所';
-          var address = poi.address || '（暂无地址）';
-          var distance = (poi.distance != null) ? Math.round(poi.distance) : null;
-
-          var marker = new AMap.Marker({
-            position: [poiLng, poiLat],
-            content: createUsagiMarkerContent(),
-            anchor: 'center',
-            zIndex: 300
-          });
-
-          marker.on('click', function () {
-            var distText = (distance != null) ? ('距离你约 ' + distance + ' 米') : '距离未知';
-            var html =
-              '<div class="popup-card">' +
-              '<h4>' + escapeHtml(name) + '</h4>' +
-              '<p>' + escapeHtml(address) + '</p>' +
-              '<p style="margin:0 0 10px;font-weight:700;color:#E8B4B8">' + escapeHtml(distText) + '</p>' +
-              '<button class="popup-nav-btn" onclick="showToast(\'🧭 导航功能即将上线 ♡\')">🐰 导航前往</button>' +
-              '</div>';
-
-            infoWin.setContent(html);
-            infoWin.open(amap, marker.getPosition());
-          });
-
-          amap.add(marker);
-          toiletMarkers.push(marker);
-        });
-      });
-    }
-
-    /* ==========================================================
-     * Health Analysis Rule Engine
-     * ========================================================== */
-    function generateHealthReport() {
-      var recs = loadRecords();
-      var advices = [];
-      var overallLevel = 'good';
-
-      var imgHappy = '<img src="chiikawa_happy.png" class="h-24 w-24 rounded-full border-4 border-white shadow-lg mx-auto mb-4 object-cover" onerror="this.style.display=\'none\'">';
-      var imgWorry = '<img src="chiikawa_nervous.png" class="h-24 w-24 rounded-full border-4 border-white shadow-lg mx-auto mb-4 object-cover" onerror="this.style.display=\'none\'">';
-      var imgCry = '<img src="chiikawa_crying.png" class="h-24 w-24 rounded-full border-4 border-white shadow-lg mx-auto mb-4 object-cover" onerror="this.style.display=\'none\'">';
-
-      if (recs.length === 0) {
-        renderHealth('none', imgHappy, '还没有打卡记录', '去"打卡"页面记录第一笔吧！', [
-          { icon: '💫', title: '欢迎使用', desc: '开始打卡后，AI 医生会根据你的数据给出个性化建议。' }
-        ]);
-        return;
-      }
-
-      var sorted = recs.slice().sort(function (a, b) { return b.id - a.id; });
-
-      var lastTime = sorted[0].id;
-      var hoursSince = (Date.now() - lastTime) / (1000 * 60 * 60);
-      if (hoursSince > 48) {
-        overallLevel = 'bad';
-        advices.push({ icon: '💔', title: '便秘预警', desc: '你已经超过两天没打卡了，多喝水，多吃膳食纤维！' });
-      } else if (hoursSince > 24) {
-        if (overallLevel === 'good') overallLevel = 'warn';
-        advices.push({ icon: '⏰', title: '记得打卡', desc: '距离上次打卡已超 24 小时，注意观察肠胃节律。' });
-      }
-
-      var recent5 = sorted.slice(0, 5);
-      var shapeCnt = { soft: 0, perfect: 0, dry: 0 };
-      recent5.forEach(function (r) { if (shapeCnt.hasOwnProperty(r.shape)) shapeCnt[r.shape]++; });
-      var softPct = shapeCnt.soft / recent5.length;
-      var perfPct = shapeCnt.perfect / recent5.length;
-      var dryPct = shapeCnt.dry / recent5.length;
-
-      if (softPct > 0.5) {
-        overallLevel = 'bad';
-        advices.push({ icon: '🩹', title: '腹泻风险', desc: '近期肠胃负担过重，建议饮食清淡，避免生冷油腻。' });
-      } else if (dryPct > 0.5) {
-        if (overallLevel === 'good') overallLevel = 'warn';
-        advices.push({ icon: '🧱', title: '干燥提醒', desc: '近期大便偏干，建议多吃果蔬、多喝水，保持肠道润滑。' });
-      } else if (perfPct >= 0.5) {
-        advices.push({ icon: '🌟', title: '状态极佳', desc: '你的肠胃简直像个精密的时钟！继续保持好习惯。' });
-      }
-
-      var totalDur = 0;
-      recent5.forEach(function (r) { totalDur += (r.duration || 0); });
-      var avgDur = totalDur / recent5.length;
-      if (avgDur > 15) {
-        if (overallLevel === 'good') overallLevel = 'warn';
-        advices.push({ icon: '📱', title: '腿麻警告', desc: '上厕所时间过长（平均 ' + Math.round(avgDur) + ' 分钟），请放下手机，谨防痔疮！' });
-      } else if (avgDur <= 8) {
-        advices.push({ icon: '⚡', title: '效率担当', desc: '平均耗时仅 ' + Math.round(avgDur) + ' 分钟，快速高效，非常好！' });
-      }
-
-      if (advices.length === 0) {
-        advices.push({ icon: '💖', title: '一切正常', desc: '数据看起来很健康，继续保持规律作息。' });
-      }
-
-      var imgMap = { good: imgHappy, warn: imgWorry, bad: imgCry };
-      var titleMap = { good: '本周肠胃状态良好 ♡', warn: '本周肠胃需要关注…', bad: '本周肠胃不太理想 QAQ' };
-      var subMap = { good: '继续保持健康习惯，你很棒！', warn: '有一些小问题，注意调整。', bad: '请重点关注以下建议！' };
-
-      renderHealth(overallLevel, imgMap[overallLevel], titleMap[overallLevel], subMap[overallLevel], advices);
-    }
-
-    function renderHealth(level, avatarImgHtml, title, sub, advices) {
-      document.getElementById('healthAvatar').innerHTML = '<div class="anim-float">' + avatarImgHtml + '</div>';
-      document.getElementById('healthStatus').textContent = title;
-      document.getElementById('healthSub').textContent = sub;
-
-      var card = document.getElementById('healthCard');
-      var bgMap = {
-        good: 'linear-gradient(135deg, #F0FFF4 0%, #FFDEE9 100%)',
-        warn: 'linear-gradient(135deg, #FCF3CF 0%, #FFDEE9 100%)',
-        bad: 'linear-gradient(135deg, #FFF0F5 0%, #FFE4E1 100%)',
-        none: 'linear-gradient(135deg, #FFFBF0 0%, #FFDEE9 100%)'
-      };
-      card.style.background = bgMap[level] || bgMap['none'];
-
-      var list = document.getElementById('adviceList');
-      list.innerHTML = '';
-      advices.forEach(function (a, idx) {
-        var div = document.createElement('div');
-        div.className = 'advice-item anim-fade-in';
-        div.style.animationDelay = (idx * 0.12) + 's';
-        div.innerHTML =
-          '<div class="advice-icon">' + a.icon + '</div>' +
-          '<div class="advice-body"><h4>' + a.title + '</h4><p>' + a.desc + '</p></div>';
-        list.appendChild(div);
-      });
-    }
-
-    /* ==========================================================
-     * Data Vault — Export / Import
-     * (新增两个独立函数；不影响其他模块)
-     * ========================================================== */
-    function exportData() {
-      try {
-        var records = loadRecords();
-        if (!records || records.length === 0) {
-          showToast('目前还没有数据可以导出哦');
-          return;
-        }
-
-        var jsonStr = JSON.stringify(records, null, 2);
-        var blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
-        var url = URL.createObjectURL(blob);
-
-        var d = new Date();
-        var y = d.getFullYear();
-        var m = String(d.getMonth() + 1).padStart(2, '0');
-        var day = String(d.getDate()).padStart(2, '0');
-        var filename = 'LogIt_Backup_' + y + m + day + '.json';
-
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-
-        setTimeout(function () {
-          try { URL.revokeObjectURL(url); } catch (e) { }
-          try { document.body.removeChild(a); } catch (e) { }
-        }, 800);
-
-        showToast('⬇️ 备份已导出');
-      } catch (e) {
-        console.warn('exportData error:', e);
-        showToast('导出失败了，请稍后再试');
-      }
-    }
-
-    function importData(event) {
-      showToast('⚠️ 导入功能暂未接入后端，敬请期待');
-      try { if (event && event.target) event.target.value = ''; } catch (e) { }
-    }
-
-    /* ==========================================================
-     * Init
-     * ========================================================== */
-    (async function init() {
+    cell.appendChild(emojiWrap);
+    grid.appendChild(cell);
+  }
+}
+
+/* ==========================================================
+ * Checkin Mode Switching
+ * ========================================================== */
+var checkinMode = 'manual';
+
+function switchCheckinMode(mode) {
+  checkinMode = mode;
+  document.querySelectorAll('#modeTabs .mode-tab').forEach(function(t) {
+    t.classList.toggle('active', t.getAttribute('data-mode') === mode);
+  });
+  document.getElementById('mode-manual').classList.toggle('hidden', mode !== 'manual');
+  document.getElementById('mode-stopwatch').classList.toggle('hidden', mode !== 'stopwatch');
+  if (mode === 'manual') { fillDefaultDatetime(); }
+  warmupCheckinLocation();
+}
+
+function fillDefaultDatetime() {
+  var now = new Date();
+  var y = now.getFullYear();
+  var mo = String(now.getMonth()+1).padStart(2,'0');
+  var d = String(now.getDate()).padStart(2,'0');
+  var h = String(now.getHours()).padStart(2,'0');
+  var mi = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('manualDatetime').value = y+'-'+mo+'-'+d+'T'+h+':'+mi;
+}
+
+/* ==========================================================
+ * Manual Save
+ * ========================================================== */
+async function saveManualRecord() {
+  var addr = await new Promise(function(resolve) {
+    getLocationForSave(function(a) { resolve(a); });
+  });
+  var dt = document.getElementById('manualDatetime').value;
+  var dur = parseInt(document.getElementById('manualDuration').value);
+  var shp = getSelectedVal('manualShapeGroup');
+  var color = getSelectedColor() || '#C4A35A';
+  if (!dt) { showToast('⚠️ 请选择打卡时间'); return; }
+  if (!dur || dur < 1) { showToast('⚠️ 请输入有效的耗时'); return; }
+  if (!shp) { showToast('⚠️ 请选择形态'); return; }
+  try {
+    var resp = await fetch(API_BASE + '/records', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUserId },
+      body: JSON.stringify({ record_time: dt, duration_minutes: dur, shape: shp, color: color, location: addr || '未知位置' })
+    });
+    if (resp.status === 201) {
+      showToast('✅ 记录已保存 ♡');
+      await fetchRecords();
+      refreshCharts();
+      if (calendarInited) renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
       fillDefaultDatetime();
-      calCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-      warmupCheckinLocation();
-      /* 仅在已登录时拉取数据 */
-      if (currentUserId) {
-        await fetchRecords();
-        refreshCharts();
-      }
-    })();
-  </script>
-</body>
+      document.getElementById('manualDuration').value = '5';
+    } else {
+      var err = await resp.json().catch(function(){ return {}; });
+      showToast('⚠️ ' + (err.message || '保存失败'));
+    }
+  } catch(e) {
+    console.error('saveManualRecord error:', e);
+    showToast('⚠️ 网络请求失败，请检查后端服务');
+  }
+}
 
+/* ==========================================================
+ * Stopwatch
+ * ========================================================== */
+var swRunning = false;
+var swInterval = null;
+var swStartTime = null;
+var swElapsed = 0;
+var swEndDate = null;
+
+function toggleStopwatch() {
+  if (!swRunning) { startStopwatch(); } else { stopStopwatch(); }
+}
+
+function startStopwatch() {
+  swRunning = true;
+  swStartTime = Date.now();
+  swElapsed = 0;
+  var btn = document.getElementById('swBtn');
+  btn.className = 'sw-btn running';
+  document.getElementById('swBtnEmoji').textContent = '🔴';
+  document.getElementById('swBtnText').textContent = '大成功，完成！';
+  document.getElementById('swHint').textContent = '计时进行中… ♡';
+  document.getElementById('swResultPanel').classList.add('hidden');
+  document.getElementById('swMain').classList.remove('hidden');
+  warmupCheckinLocation();
+  swInterval = setInterval(function() {
+    swElapsed = Math.floor((Date.now() - swStartTime) / 1000);
+    var m = String(Math.floor(swElapsed / 60)).padStart(2, '0');
+    var s = String(swElapsed % 60).padStart(2, '0');
+    document.getElementById('swDisplay').textContent = m + ':' + s;
+  }, 200);
+}
+
+function stopStopwatch() {
+  swRunning = false;
+  clearInterval(swInterval);
+  swInterval = null;
+  swEndDate = new Date();
+  var durMin = Math.max(1, Math.round(swElapsed / 60));
+  var btn = document.getElementById('swBtn');
+  btn.className = 'sw-btn ready';
+  document.getElementById('swBtnEmoji').textContent = '🟢';
+  document.getElementById('swBtnText').textContent = '冲啊，准备记录！';
+  document.getElementById('swDisplay').textContent = '00:00';
+  document.getElementById('swHint').textContent = '点击按钮开始计时 ♡';
+  var m = Math.floor(swElapsed / 60);
+  var s = swElapsed % 60;
+  document.getElementById('swResultTime').textContent = m + ' 分 ' + s + ' 秒';
+  document.getElementById('swResultMeta').textContent = '结束于 ' + swEndDate.getHours().toString().padStart(2,'0') + ':' + swEndDate.getMinutes().toString().padStart(2,'0') + ' · 约 ' + durMin + ' 分钟';
+  document.getElementById('swResultPanel').classList.remove('hidden');
+  document.querySelectorAll('#swShapeGroup .opt-pill').forEach(function(p) {
+    p.classList.toggle('active', p.getAttribute('data-val') === 'perfect');
+  });
+  document.getElementById('swResultPanel').dataset.duration = durMin;
+  document.getElementById('swResultPanel').dataset.endTime = swEndDate.getTime();
+  warmupCheckinLocation();
+}
+
+async function saveStopwatchRecord() {
+  var panel = document.getElementById('swResultPanel');
+  var dur = parseInt(panel.dataset.duration);
+  var endTime = parseInt(panel.dataset.endTime);
+  var shp = getSelectedVal('swShapeGroup');
+  if (!shp) { showToast('⚠️ 请选择形态'); return; }
+  var addr = await new Promise(function(resolve) {
+    getLocationForSave(function(a) { resolve(a); });
+  });
+  var dateObj = new Date(endTime);
+  var color = getSelectedColor() || '#C4A35A';
+  var recordTime = dateObj.getFullYear() + '-' +
+    String(dateObj.getMonth()+1).padStart(2,'0') + '-' +
+    String(dateObj.getDate()).padStart(2,'0') + 'T' +
+    String(dateObj.getHours()).padStart(2,'0') + ':' +
+    String(dateObj.getMinutes()).padStart(2,'0');
+  try {
+    var resp = await fetch(API_BASE + '/records', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUserId },
+      body: JSON.stringify({ record_time: recordTime, duration_minutes: dur, shape: shp, color: color, location: addr || '未知位置' })
+    });
+    if (resp.status === 201) {
+      showToast('✅ 计时记录已保存 ♡');
+      await fetchRecords();
+      refreshCharts();
+      if (calendarInited) renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
+      panel.classList.add('hidden');
+    } else {
+      var err = await resp.json().catch(function(){ return {}; });
+      showToast('⚠️ ' + (err.message || '保存失败'));
+    }
+  } catch(e) {
+    console.error('saveStopwatchRecord error:', e);
+    showToast('⚠️ 网络请求失败，请检查后端服务');
+  }
+}
+
+function resetStopwatch() {
+  document.getElementById('swResultPanel').classList.add('hidden');
+  showToast('🗑️ 已放弃本次记录');
+}
+
+/* ==========================================================
+ * Charts (Morandi Pastels)
+ * ========================================================== */
+var pieInst = null, lineInst = null;
+
+function refreshCharts() {
+  var recs = loadRecords();
+  renderPie(recs);
+  renderLine(recs);
+}
+
+function renderPie(recs) {
+  var c = { soft:0, perfect:0, dry:0 };
+  recs.forEach(function(r){ if(c.hasOwnProperty(r.shape)) c[r.shape]++; });
+  var labels=[], data=[], colors=[];
+  Object.keys(SHAPE_MAP).forEach(function(k){
+    labels.push(SHAPE_MAP[k].label); data.push(c[k]); colors.push(SHAPE_MAP[k].color);
+  });
+  if (pieInst) {
+    pieInst.data.labels=labels; pieInst.data.datasets[0].data=data;
+    pieInst.data.datasets[0].backgroundColor=colors; pieInst.update(); return;
+  }
+  pieInst = new Chart(document.getElementById('pieChart'), {
+    type:'doughnut',
+    data:{ labels:labels, datasets:[{ data:data, backgroundColor:colors, borderWidth:3, borderColor:'#FFFBF0', hoverOffset:8 }] },
+    options:{ responsive:true, maintainAspectRatio:true, cutout:'55%',
+      plugins:{ legend:{ position:'bottom', labels:{ padding:16, usePointStyle:true, font:{size:12, family:'Quicksand'}, color:'#5D4037' } } },
+      animation:{ animateRotate:true, animateScale:true } }
+  });
+}
+
+function renderLine(recs) {
+  var today=new Date(), labels=[], keys=[];
+  for(var i=6;i>=0;i--){ var d=new Date(today); d.setDate(d.getDate()-i); var k=fmtDate(d); keys.push(k); labels.push(shortLabel(k)); }
+  var m={}; keys.forEach(function(k){ m[k]={t:0,n:0}; });
+  recs.forEach(function(r){ if(m[r.date]){ m[r.date].t+=r.duration; m[r.date].n++; } });
+  var data=keys.map(function(k){ return m[k].n>0?Math.round(m[k].t/m[k].n):0; });
+  if(lineInst){ lineInst.data.labels=labels; lineInst.data.datasets[0].data=data; lineInst.update(); return; }
+  lineInst = new Chart(document.getElementById('lineChart'), {
+    type:'line',
+    data:{ labels:labels, datasets:[{ label:'耗时（分钟）', data:data, fill:true,
+      backgroundColor:'rgba(200,162,200,0.15)', borderColor:'#C8A2C8',
+      pointBackgroundColor:'#E8B4B8', pointRadius:5, pointHoverRadius:7, tension:0.4, borderWidth:2.5 }] },
+    options:{ responsive:true, maintainAspectRatio:true,
+      scales:{ y:{ beginAtZero:true, ticks:{stepSize:5,font:{size:11,family:'Quicksand'},color:'#8D6E63'}, grid:{color:'rgba(232,180,184,0.1)'} },
+               x:{ ticks:{font:{size:11,family:'Quicksand'},color:'#8D6E63'}, grid:{display:false} } },
+      plugins:{ legend:{display:false} }, animation:{duration:1200,easing:'easeOutQuart'} }
+  });
+}
+
+/* ==========================================================
+ * AMap (Usagi Theme)
+ * ========================================================== */
+var amap = null;
+var myLocMarker = null;
+var toiletMarkers = [];
+var infoWin = null;
+var FALLBACK_LNG = 116.397428;
+var FALLBACK_LAT = 39.90923;
+
+function initMap() {
+  if (mapInited) {
+    setTimeout(function(){ try{ amap && amap.resize(); }catch(e){} }, 120);
+    return;
+  }
+  mapInited = true;
+  amap = new AMap.Map('map', { zoom: 16, center: [FALLBACK_LNG, FALLBACK_LAT], viewMode: '2D', mapStyle: 'amap://styles/macaron' });
+  infoWin = new AMap.InfoWindow({ isCustom: true, offset: new AMap.Pixel(0, -36) });
+  locateUserByAMap();
+}
+
+function locateUserByAMap() {
+  var loading = document.getElementById('mapLoading');
+  var geolocation = new AMap.Geolocation({
+    enableHighAccuracy: true, timeout: 8000, maximumAge: 0, convert: true,
+    showButton: false, showMarker: false, showCircle: false, panToLocation: false, zoomToAccuracy: false
+  });
+  geolocation.getCurrentPosition(function(status, result){
+    if (status === 'complete' && result && result.position) {
+      placeUserAndSearch(result.position.lat, result.position.lng);
+      hideMapLoading(loading);
+    } else {
+      showToast('📍 定位失败，已切换到天安门演示');
+      placeUserAndSearch(FALLBACK_LAT, FALLBACK_LNG);
+      hideMapLoading(loading);
+    }
+  });
+}
+
+function hideMapLoading(el) {
+  el.classList.add('fade-out');
+  setTimeout(function(){ el.style.display = 'none'; }, 400);
+}
+
+function createMyLocationMarkerContent() {
+  var div = document.createElement('div');
+  div.className = 'my-location-icon';
+  div.innerHTML = '<div class="ring"></div><div class="dot"></div>';
+  return div;
+}
+
+function clearToiletMarkers() {
+  toiletMarkers.forEach(function(m){ amap.remove(m); });
+  toiletMarkers = [];
+  try { infoWin && infoWin.close(); } catch(e) {}
+}
+
+function placeUserAndSearch(lat, lng) {
+  var center = [lng, lat];
+  amap.setZoomAndCenter(16, center, true);
+  clearToiletMarkers();
+  if (myLocMarker) { amap.remove(myLocMarker); myLocMarker = null; }
+  myLocMarker = new AMap.Marker({ position: center, content: createMyLocationMarkerContent(), anchor: 'center', zIndex: 999 });
+  amap.add(myLocMarker);
+  searchToiletsAround(lat, lng);
+}
+
+function createUsagiMarkerContent() {
+  var wrap = document.createElement('div');
+  wrap.style.width = '36px'; wrap.style.height = '36px'; wrap.style.transform = 'translate(-18px, -36px)';
+  wrap.innerHTML = '<img src="usagi_marker.png" style="width:36px;height:36px;border-radius:9999px;object-fit:cover;box-shadow:0 6px 18px rgba(232,180,184,.25)" onerror="this.style.display=\'none\'">';
+  return wrap;
+}
+
+function searchToiletsAround(lat, lng) {
+  var placeSearch = new AMap.PlaceSearch({ pageSize: 20, type: '200300|200301|200302' });
+  var center = new AMap.LngLat(lng, lat);
+  placeSearch.searchNearBy('公共厕所|洗手间|卫生间', center, 1000, function(status, result){
+    if (status !== 'complete' || !result || !result.poiList || !result.poiList.pois) {
+      showToast('😢 周边搜索失败'); return;
+    }
+    var pois = result.poiList.pois;
+    if (!pois.length) { showToast('🐰 附近 1km 没搜到公厕'); return; }
+    pois.forEach(function(poi){
+      if (!poi || !poi.location) return;
+      var poiLng = poi.location.lng;
+      var poiLat = poi.location.lat;
+      var name = poi.name || '公共厕所';
+      var address = poi.address || '（暂无地址）';
+      var distance = (poi.distance != null) ? Math.round(poi.distance) : null;
+      var marker = new AMap.Marker({ position: [poiLng, poiLat], content: createUsagiMarkerContent(), anchor: 'center', zIndex: 300 });
+      marker.on('click', function(){
+        var distText = (distance != null) ? ('距离你约 ' + distance + ' 米') : '距离未知';
+        var html =
+          '<div class="popup-card">' +
+            '<h4>' + escapeHtml(name) + '</h4>' +
+            '<p>' + escapeHtml(address) + '</p>' +
+            '<p style="margin:0 0 10px;font-weight:700;color:#E8B4B8">' + escapeHtml(distText) + '</p>' +
+            '<button class="popup-nav-btn" onclick="showToast(\'🧭 导航功能即将上线 ♡\')">🐰 导航前往</button>' +
+          '</div>';
+        infoWin.setContent(html);
+        infoWin.open(amap, marker.getPosition());
+      });
+      amap.add(marker);
+      toiletMarkers.push(marker);
+    });
+  });
+}
+
+/* ==========================================================
+ * Health Analysis
+ * ========================================================== */
+function generateHealthReport() {
+  var recs = loadRecords();
+  var advices = [];
+  var overallLevel = 'good';
+  var imgHappy = '<img src="chiikawa_happy.png" class="h-24 w-24 rounded-full border-4 border-white shadow-lg mx-auto mb-4 object-cover" onerror="this.style.display=\'none\'">';
+  var imgWorry = '<img src="chiikawa_nervous.png" class="h-24 w-24 rounded-full border-4 border-white shadow-lg mx-auto mb-4 object-cover" onerror="this.style.display=\'none\'">';
+  var imgCry = '<img src="chiikawa_crying.png" class="h-24 w-24 rounded-full border-4 border-white shadow-lg mx-auto mb-4 object-cover" onerror="this.style.display=\'none\'">';
+  if (recs.length === 0) {
+    renderHealth('none', imgHappy, '还没有打卡记录', '去"打卡"页面记录第一笔吧！', [{ icon: '💫', title: '欢迎使用', desc: '开始打卡后，AI 医生会根据你的数据给出个性化建议。' }]);
+    return;
+  }
+  var sorted = recs.slice().sort(function(a,b){ return b.id - a.id; });
+  var lastTime = sorted[0].id;
+  var hoursSince = (Date.now() - lastTime) / (1000 * 60 * 60);
+  if (hoursSince > 48) {
+    overallLevel = 'bad';
+    advices.push({ icon: '💔', title: '便秘预警', desc: '你已经超过两天没打卡了，多喝水，多吃膳食纤维！' });
+  } else if (hoursSince > 24) {
+    if (overallLevel === 'good') overallLevel = 'warn';
+    advices.push({ icon: '⏰', title: '记得打卡', desc: '距离上次打卡已超 24 小时，注意观察肠胃节律。' });
+  }
+  var recent5 = sorted.slice(0, 5);
+  var shapeCnt = { soft:0, perfect:0, dry:0 };
+  recent5.forEach(function(r){ if(shapeCnt.hasOwnProperty(r.shape)) shapeCnt[r.shape]++; });
+  var softPct = shapeCnt.soft / recent5.length;
+  var perfPct = shapeCnt.perfect / recent5.length;
+  var dryPct = shapeCnt.dry / recent5.length;
+  if (softPct > 0.5) {
+    overallLevel = 'bad';
+    advices.push({ icon: '🩹', title: '腹泻风险', desc: '近期肠胃负担过重，建议饮食清淡，避免生冷油腻。' });
+  } else if (dryPct > 0.5) {
+    if (overallLevel === 'good') overallLevel = 'warn';
+    advices.push({ icon: '🧱', title: '干燥提醒', desc: '近期大便偏干，建议多吃果蔬、多喝水，保持肠道润滑。' });
+  } else if (perfPct >= 0.5) {
+    advices.push({ icon: '🌟', title: '状态极佳', desc: '你的肠胃简直像个精密的时钟！继续保持好习惯。' });
+  }
+  var totalDur = 0;
+  recent5.forEach(function(r){ totalDur += (r.duration || 0); });
+  var avgDur = totalDur / recent5.length;
+  if (avgDur > 15) {
+    if (overallLevel === 'good') overallLevel = 'warn';
+    advices.push({ icon: '📱', title: '腿麻警告', desc: '上厕所时间过长（平均 ' + Math.round(avgDur) + ' 分钟），请放下手机，谨防痔疮！' });
+  } else if (avgDur <= 8) {
+    advices.push({ icon: '⚡', title: '效率担当', desc: '平均耗时仅 ' + Math.round(avgDur) + ' 分钟，快速高效，非常好！' });
+  }
+  if (advices.length === 0) advices.push({ icon: '💖', title: '一切正常', desc: '数据看起来很健康，继续保持规律作息。' });
+  var imgMap = { good: imgHappy, warn: imgWorry, bad: imgCry };
+  var titleMap = { good: '本周肠胃状态良好 ♡', warn: '本周肠胃需要关注…', bad: '本周肠胃不太理想 QAQ' };
+  var subMap = { good: '继续保持健康习惯，你很棒！', warn: '有一些小问题，注意调整。', bad: '请重点关注以下建议！' };
+  renderHealth(overallLevel, imgMap[overallLevel], titleMap[overallLevel], subMap[overallLevel], advices);
+}
+
+function renderHealth(level, avatarImgHtml, title, sub, advices) {
+  document.getElementById('healthAvatar').innerHTML = '<div class="anim-float">' + avatarImgHtml + '</div>';
+  document.getElementById('healthStatus').textContent = title;
+  document.getElementById('healthSub').textContent = sub;
+  var card = document.getElementById('healthCard');
+  var bgMap = {
+    good: 'linear-gradient(135deg, #F0FFF4 0%, #FFDEE9 100%)',
+    warn: 'linear-gradient(135deg, #FCF3CF 0%, #FFDEE9 100%)',
+    bad:  'linear-gradient(135deg, #FFF0F5 0%, #FFE4E1 100%)',
+    none: 'linear-gradient(135deg, #FFFBF0 0%, #FFDEE9 100%)'
+  };
+  card.style.background = bgMap[level] || bgMap['none'];
+  var list = document.getElementById('adviceList');
+  list.innerHTML = '';
+  advices.forEach(function(a, idx) {
+    var div = document.createElement('div');
+    div.className = 'advice-item anim-fade-in';
+    div.style.animationDelay = (idx * 0.12) + 's';
+    div.innerHTML = '<div class="advice-icon">' + a.icon + '</div><div class="advice-body"><h4>' + a.title + '</h4><p>' + a.desc + '</p></div>';
+    list.appendChild(div);
+  });
+}
+
+/* ==========================================================
+ * Data Vault — Export / Import
+ * ========================================================== */
+function exportData() {
+  try {
+    var records = loadRecords();
+    if (!records || records.length === 0) { showToast('目前还没有数据可以导出哦'); return; }
+    var jsonStr = JSON.stringify(records, null, 2);
+    var blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var d = new Date();
+    var filename = 'LogIt_Backup_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.json';
+    var a = document.createElement('a');
+    a.href = url; a.download = filename; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} try{document.body.removeChild(a);}catch(e){} }, 800);
+    showToast('⬇️ 备份已导出');
+  } catch(e) { showToast('导出失败了，请稍后再试'); }
+}
+
+function importData(event) {
+  showToast('⚠️ 导入功能暂未接入后端，敬请期待');
+  try { if (event && event.target) event.target.value = ''; } catch(e) {}
+}
+
+/* ==========================================================
+ * Init — 检查 localStorage 是否已登录
+ * ========================================================== */
+(async function init() {
+  fillDefaultDatetime();
+  calCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+  var savedId = localStorage.getItem('logit_user_id');
+  var savedName = localStorage.getItem('logit_username');
+
+  if (savedId && savedName) {
+    // 已有登录信息，直接进入
+    currentUserId = savedId;
+    currentUsername = savedName;
+    hideLoginOverlay();
+    warmupCheckinLocation();
+    await fetchRecords();
+    refreshCharts();
+  } else {
+    // 没有登录信息，显示登录遮罩
+    showLoginOverlay();
+  }
+})();
+</script>
+</body>
 </html>
