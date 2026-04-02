@@ -219,6 +219,22 @@ body::-webkit-scrollbar{display:none}
 
 <div id="toast" class="toast"></div>
 
+<!-- ✅ Location Edit Modal -->
+<div id="locEditMask" class="modal-mask" onclick="if(event.target.id==='locEditMask') document.getElementById('locEditMask').classList.remove('show')">
+  <div class="modal-panel" style="max-width:320px;padding:24px;text-align:center">
+    <div class="anim-float mb-3">
+      <img src="usagi_marker.png" class="h-12 w-12 rounded-full object-cover shadow-md mx-auto" onerror="this.style.display='none'">
+    </div>
+    <h3 class="text-base font-extrabold" style="color:#5D4037;margin-bottom:8px">手动修改位置</h3>
+    <p class="text-xs font-bold mb-4" style="color:#8D6E63">定位不准？自己来定！</p>
+    <input type="text" id="locEditInput" class="form-input mb-4" placeholder="例如：宿舍 / 教学楼厕所 / 银泰百货" style="text-align:center;font-weight:bold">
+    <div class="flex gap-3">
+      <button onclick="document.getElementById('locEditMask').classList.remove('show')" class="flex-1 py-2.5 rounded-full font-bold text-sm" style="background:#EBF5FB;color:#8D6E63">取消</button>
+      <button onclick="saveEditedLocation()" class="flex-1 py-2.5 rounded-full text-white font-bold text-sm shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#F5B97A,#F0A24A)">确定</button>
+    </div>
+  </div>
+</div>
+
 <!-- ✅ Login Overlay -->
 <div id="loginOverlay" class="login-overlay">
   <div class="login-card">
@@ -400,7 +416,7 @@ body::-webkit-scrollbar{display:none}
   <!-- VIEW: Map -->
   <div id="view-map" class="hidden flex-1 relative" style="background:#FCF3CF">
     <div class="yaha-banner">
-      <span class="anim-wiggle inline-block">🐰</span> ヤ哈！找公厕啦！
+      <span class="anim-wiggle inline-block">🐰</span> ヤ哈！找公厕啦！（点地图可选位置）
     </div>
     <div id="mapLoading" class="map-loading">
       <div class="anim-float">
@@ -724,12 +740,22 @@ function editLocation(e) {
   if (e && e.preventDefault) e.preventDefault();
   if (e && e.stopPropagation) e.stopPropagation();
   var current = manualOverrideLocation || lastCheckinLocation.text || '';
-  var val = prompt('定位失败？请手动输入当前位置：', current && current !== '未知位置' ? current : '');
-  if (val == null) return;
-  val = String(val).trim();
-  if (!val) { manualOverrideLocation = ''; setCheckinLocationText('未知位置'); return; }
-  manualOverrideLocation = val;
-  setCheckinLocationText(val);
+  if (current === '未知位置') current = '';
+  document.getElementById('locEditInput').value = current;
+  document.getElementById('locEditMask').classList.add('show');
+  setTimeout(function() { document.getElementById('locEditInput').focus(); }, 100);
+}
+
+function saveEditedLocation() {
+  var val = document.getElementById('locEditInput').value.trim();
+  if (!val) {
+    manualOverrideLocation = '';
+    setCheckinLocationText('未知位置');
+  } else {
+    manualOverrideLocation = val;
+    setCheckinLocationText(val);
+  }
+  document.getElementById('locEditMask').classList.remove('show');
   showToast('✏️ 位置已手动更新');
 }
 
@@ -1271,7 +1297,36 @@ function initMap() {
   mapInited = true;
   amap = new AMap.Map('map', { zoom: 16, center: [FALLBACK_LNG, FALLBACK_LAT], viewMode: '2D', mapStyle: 'amap://styles/macaron' });
   infoWin = new AMap.InfoWindow({ isCustom: true, offset: new AMap.Pixel(0, -36) });
+  // ✅ 地图点击 → 逆地理编码获取街道名
+  amap.on('click', function(e) {
+    var lnglat = e.lnglat;
+    var geocoder = new AMap.Geocoder();
+    geocoder.getAddress([lnglat.getLng(), lnglat.getLat()], function(status, result) {
+      if (status === 'complete' && result.regeocode) {
+        var addr = result.regeocode.formattedAddress || '未知位置';
+        window._mapClickAddr = addr;
+        var html =
+          '<div class="popup-card">' +
+            '<h4>📍 ' + escapeHtml(addr) + '</h4>' +
+            '<p style="margin:0 0 10px">点击按钮设为打卡位置</p>' +
+            '<button class="popup-nav-btn" onclick="useMapClickLocation()">✅ 用这个位置打卡</button>' +
+          '</div>';
+        infoWin.setContent(html);
+        infoWin.open(amap, [lnglat.getLng(), lnglat.getLat()]);
+      } else {
+        showToast('😢 无法获取该位置地址');
+      }
+    });
+  });
   locateUserByAMap();
+}
+
+function useMapClickLocation() {
+  var addr = window._mapClickAddr || '未知位置';
+  manualOverrideLocation = addr;
+  setCheckinLocationText(addr);
+  showToast('📍 已设为打卡位置');
+  try { infoWin.close(); } catch(e) {}
 }
 
 function locateUserByAMap() {
