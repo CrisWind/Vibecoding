@@ -213,6 +213,12 @@ body::-webkit-scrollbar{display:none}
 .login-err{font-size:12px;font-weight:700;color:#E88FAA;margin-top:10px;min-height:18px}
 
 .amap-logo,.amap-copyright{display:none!important}
+
+/* v7: Friends & Co-Poop */
+.friend-card{background:#fff;border:1.5px solid rgba(214,234,248,.8);border-radius:18px;padding:12px 14px;box-shadow:0 2px 10px rgba(135,206,235,.1);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.co-poop-lobby{background:linear-gradient(135deg,rgba(255,222,233,.35),rgba(252,243,207,.35));border:2px dashed #E8B4B8;border-radius:20px;padding:14px}
+.co-poop-item{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.75);border-radius:12px;padding:8px 12px;margin-top:6px}
+.pending-badge{background:#E88FAA;color:#fff;font-size:11px;font-weight:900;border-radius:9999px;padding:2px 8px;min-width:20px;text-align:center}
 </style>
 </head>
 <body class="min-h-screen select-none">
@@ -366,6 +372,14 @@ body::-webkit-scrollbar{display:none}
           </button>
           <p class="text-xs mt-4 font-semibold" style="color:#8D6E63" id="swHint">点击按钮开始计时 ♡</p>
         </div>
+        <!-- v7: Co-Poop Lobby -->
+        <div id="coPoopLobby" class="hidden co-poop-lobby">
+          <div class="text-center mb-2">
+            <span class="text-sm font-extrabold" style="color:#E88FAA">🔥 天南海北联机中</span>
+          </div>
+          <div id="coPoopList"></div>
+          <div id="coPoopEmpty" class="text-center text-xs font-bold" style="color:#8D6E63;padding:6px 0">暂无好友在线，独享这份宁静 ♡</div>
+        </div>
         <div id="swResultPanel" class="hidden sw-result-panel space-y-4">
           <div class="loc-pill" id="swLocPill" style="background:rgba(214,234,248,.55);border-color:rgba(135,206,235,.35)">
             <div class="loc-left">
@@ -483,6 +497,36 @@ body::-webkit-scrollbar{display:none}
     </main>
   </div>
 
+  <!-- VIEW: Friends -->
+  <div id="view-friends" class="hidden flex-1 overflow-y-auto pb-24" style="background:linear-gradient(180deg,#F0F8FF 0%,#FFFBF0 40%)">
+    <main class="px-5 pt-6 pb-4 space-y-5">
+      <div class="rounded-3xl p-5 shadow-sm" style="background:#FFF5F8;border:2px solid #FFDEE9">
+        <h3 class="text-sm font-bold mb-3" style="color:#5D4037">🔍 添加好友</h3>
+        <div class="flex gap-2">
+          <input type="text" id="friendSearchInput" class="form-input flex-1" placeholder="输入好友昵称…" maxlength="50" onkeydown="if(event.key==='Enter')sendFriendRequest()">
+          <button onclick="sendFriendRequest()" class="px-4 py-2 rounded-full text-white font-bold text-sm shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#87CEEB,#B8D4E8);white-space:nowrap">发送</button>
+        </div>
+        <p class="text-[11px] font-semibold mt-2" style="color:#8D6E63">输入对方的精确昵称，点击发送好友申请 ♡</p>
+      </div>
+      <div class="rounded-3xl p-5 shadow-sm" style="background:linear-gradient(135deg,rgba(252,243,207,.65),rgba(255,248,220,.65));border:2px solid rgba(222,184,135,.4)">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold" style="color:#5D4037">📬 收到的申请</h3>
+          <span id="pendingBadge" class="pending-badge" style="display:none">0</span>
+        </div>
+        <div id="pendingList" class="space-y-2"></div>
+        <div id="pendingEmpty" class="text-center text-xs font-bold py-3" style="color:#8D6E63">暂无新的好友申请</div>
+      </div>
+      <div class="rounded-3xl p-5 shadow-sm" style="background:#F0F8FF;border:2px solid #D6EAF8">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold" style="color:#5D4037">👫 我的好友</h3>
+          <button onclick="loadFriendsView()" class="text-xs font-bold px-3 py-1.5 rounded-full active:scale-95 transition-transform" style="background:rgba(135,206,235,.2);color:#5B9BD5">🔄 刷新</button>
+        </div>
+        <div id="friendsList" class="space-y-2"></div>
+        <div id="friendsEmpty" class="text-center text-xs font-bold py-3" style="color:#8D6E63">还没有好友，快去添加吧 ♡</div>
+      </div>
+    </main>
+  </div>
+
 </div>
 
 <!-- Bottom Nav -->
@@ -517,6 +561,12 @@ body::-webkit-scrollbar{display:none}
         <img src="chiikawa_happy.png" class="h-7 w-7 rounded-full object-cover mb-1" alt="Nav" onerror="this.style.display='none'">
       </div>
       <span class="tab-label">我的健康</span>
+    </div>
+    <div class="tab-item flex flex-col items-center cursor-pointer" data-view="friends" onclick="switchView('friends',this)">
+      <div class="tab-icon" style="background:linear-gradient(135deg,rgba(255,222,233,.9),rgba(214,234,248,.35))">
+        <span style="font-size:18px">👫</span>
+      </div>
+      <span class="tab-label">好友</span>
     </div>
   </div>
 </nav>
@@ -596,6 +646,8 @@ async function handleLogin() {
 
 function handleLogout() {
   if (!confirm('确定要退出登录吗？')) return;
+  setMyStatus('idle');
+  stopCoPoopPolling();
   currentUserId = null;
   currentUsername = '';
   cachedRecords = [];
@@ -678,7 +730,7 @@ function showToast(msg) {
 var currentView = 'checkin';
 var mapInited = false;
 var calendarInited = false;
-var ALL_VIEWS = ['checkin', 'map', 'calendar', 'health'];
+var ALL_VIEWS = ['checkin', 'map', 'calendar', 'health', 'friends'];
 
 function switchView(view, tabEl) {
   document.querySelectorAll('.tab-item').forEach(function(i){ i.classList.remove('active-tab'); });
@@ -694,6 +746,7 @@ function switchView(view, tabEl) {
   if (view === 'health') { generateHealthReport(); }
   if (view === 'calendar') { initCalendar(); }
   if (view === 'checkin') { warmupCheckinLocation(); }
+  if (view === 'friends') { loadFriendsView(); }
 }
 
 /* ==========================================================
@@ -1153,11 +1206,14 @@ function startStopwatch() {
   document.getElementById('swResultPanel').classList.add('hidden');
   document.getElementById('swMain').classList.remove('hidden');
   warmupCheckinLocation();
+  setMyStatus('pooping');
+  startCoPoopPolling();
   swInterval = setInterval(function() {
     swElapsed = Math.floor((Date.now() - swStartTime) / 1000);
     var m = String(Math.floor(swElapsed / 60)).padStart(2, '0');
     var s = String(swElapsed % 60).padStart(2, '0');
     document.getElementById('swDisplay').textContent = m + ':' + s;
+    if (coPoopFriendsCache.length > 0) renderCoPoopLobby();
   }, 200);
 }
 
@@ -1165,6 +1221,8 @@ function stopStopwatch() {
   swRunning = false;
   clearInterval(swInterval);
   swInterval = null;
+  setMyStatus('idle');
+  stopCoPoopPolling();
   swEndDate = new Date();
   var durMin = Math.max(1, Math.round(swElapsed / 60));
   var btn = document.getElementById('swBtn');
@@ -1187,6 +1245,8 @@ function stopStopwatch() {
 }
 
 async function saveStopwatchRecord() {
+  setMyStatus('idle');
+  stopCoPoopPolling();
   var panel = document.getElementById('swResultPanel');
   var dur = parseInt(panel.dataset.duration);
   var endTime = parseInt(panel.dataset.endTime);
@@ -1225,6 +1285,8 @@ async function saveStopwatchRecord() {
 }
 
 function resetStopwatch() {
+  setMyStatus('idle');
+  stopCoPoopPolling();
   document.getElementById('swResultPanel').classList.add('hidden');
   showToast('🗑️ 已放弃本次记录');
 }
@@ -1564,6 +1626,194 @@ function exportData() {
 function importData(event) {
   showToast('⚠️ 导入功能暂未接入后端，敬请期待');
   try { if (event && event.target) event.target.value = ''; } catch(e) {}
+}
+
+/* ==========================================================
+ * Co-Poop Polling (v7)
+ * ========================================================== */
+var coPoopInterval = null;
+var coPoopFriendsCache = [];
+var coPoopLastPollTime = 0;
+
+async function setMyStatus(status) {
+  if (!currentUserId) return;
+  try {
+    await fetch(API_BASE + '/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUserId },
+      body: JSON.stringify({ status: status })
+    });
+  } catch(e) { console.warn('setMyStatus:', e); }
+}
+
+function startCoPoopPolling() {
+  stopCoPoopPolling();
+  var el = document.getElementById('coPoopLobby');
+  if (el) el.classList.remove('hidden');
+  fetchActiveFriends();
+  coPoopInterval = setInterval(fetchActiveFriends, 3000);
+}
+
+function stopCoPoopPolling() {
+  if (coPoopInterval) { clearInterval(coPoopInterval); coPoopInterval = null; }
+  var el = document.getElementById('coPoopLobby');
+  if (el) el.classList.add('hidden');
+  coPoopFriendsCache = [];
+  coPoopLastPollTime = 0;
+}
+
+async function fetchActiveFriends() {
+  if (!currentUserId) return;
+  try {
+    var resp = await fetch(API_BASE + '/friends/active', { headers: { 'X-User-Id': currentUserId } });
+    var json = await resp.json();
+    if (json.code === 200) {
+      coPoopFriendsCache = json.data || [];
+      coPoopLastPollTime = Date.now();
+      renderCoPoopLobby();
+    }
+  } catch(e) { console.warn('fetchActiveFriends:', e); }
+}
+
+function renderCoPoopLobby() {
+  var list = document.getElementById('coPoopList');
+  var empty = document.getElementById('coPoopEmpty');
+  if (!list) return;
+  if (coPoopFriendsCache.length === 0) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  var localOffset = coPoopLastPollTime > 0 ? Math.floor((Date.now() - coPoopLastPollTime) / 1000) : 0;
+  var html = '';
+  coPoopFriendsCache.forEach(function(f) {
+    var elapsed = (f.elapsed_seconds || 0) + localOffset;
+    var m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    var s = String(elapsed % 60).padStart(2, '0');
+    html += '<div class="co-poop-item">' +
+      '<span class="text-sm font-bold" style="color:#5D4037">💩 ' + escapeHtml(f.username) + '</span>' +
+      '<span class="text-xs font-extrabold" style="color:#E88FAA">' + m + ':' + s + '</span>' +
+    '</div>';
+  });
+  list.innerHTML = html;
+}
+
+/* ==========================================================
+ * Friends Management (v7)
+ * ========================================================== */
+
+async function sendFriendRequest() {
+  var input = document.getElementById('friendSearchInput');
+  var name = (input.value || '').trim();
+  if (!name) { showToast('请输入好友昵称'); return; }
+  try {
+    var resp = await fetch(API_BASE + '/friends/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUserId },
+      body: JSON.stringify({ username: name })
+    });
+    var json = await resp.json();
+    showToast(json.message || (json.code === 200 ? '已发送' : '发送失败'));
+    if (json.code === 200) input.value = '';
+  } catch(e) { showToast('网络请求失败'); }
+}
+
+async function loadPendingRequests() {
+  if (!currentUserId) return;
+  try {
+    var resp = await fetch(API_BASE + '/friends/pending', { headers: { 'X-User-Id': currentUserId } });
+    var json = await resp.json();
+    var data = (json.code === 200 && json.data) ? json.data : [];
+    renderPendingList(data);
+  } catch(e) { console.warn('loadPending:', e); }
+}
+
+function renderPendingList(list) {
+  var el = document.getElementById('pendingList');
+  var empty = document.getElementById('pendingEmpty');
+  var badge = document.getElementById('pendingBadge');
+  if (!el) return;
+  if (list.length === 0) {
+    el.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    if (badge) badge.style.display = 'none';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  if (badge) { badge.textContent = list.length; badge.style.display = 'inline-block'; }
+  el.innerHTML = '';
+  list.forEach(function(r) {
+    var card = document.createElement('div');
+    card.className = 'friend-card';
+    card.innerHTML =
+      '<div class="flex-1 min-w-0">' +
+        '<div class="text-sm font-bold" style="color:#5D4037">' + escapeHtml(r.from_username) + '</div>' +
+        '<div class="text-[11px]" style="color:#8D6E63">想和你成为好友 ♡</div>' +
+      '</div>' +
+      '<div class="flex gap-2 shrink-0">' +
+        '<button onclick="handleFriendAction(' + r.request_id + ',\x27accept\x27)" class="px-3 py-1.5 rounded-full text-white text-xs font-bold shadow active:scale-95 transition-transform" style="background:linear-gradient(135deg,#A8D8B9,#7EC8A0)">✅ 接受</button>' +
+        '<button onclick="handleFriendAction(' + r.request_id + ',\x27reject\x27)" class="px-3 py-1.5 rounded-full text-xs font-bold active:scale-95 transition-transform" style="background:rgba(255,222,233,.5);color:#8D6E63;border:1.5px solid rgba(232,180,184,.5)">拒绝</button>' +
+      '</div>';
+    el.appendChild(card);
+  });
+}
+
+async function handleFriendAction(requestId, action) {
+  try {
+    var resp = await fetch(API_BASE + '/friends/accept', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUserId },
+      body: JSON.stringify({ request_id: requestId, action: action })
+    });
+    var json = await resp.json();
+    showToast(json.message || 'done');
+    loadPendingRequests();
+    if (action === 'accept') loadFriendsList();
+  } catch(e) { showToast('操作失败'); }
+}
+
+async function loadFriendsList() {
+  if (!currentUserId) return;
+  try {
+    var resp = await fetch(API_BASE + '/friends', { headers: { 'X-User-Id': currentUserId } });
+    var json = await resp.json();
+    var data = (json.code === 200 && json.data) ? json.data : [];
+    renderFriendsList(data);
+  } catch(e) { console.warn('loadFriends:', e); }
+}
+
+function renderFriendsList(list) {
+  var el = document.getElementById('friendsList');
+  var empty = document.getElementById('friendsEmpty');
+  if (!el) return;
+  if (list.length === 0) {
+    el.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  el.innerHTML = '';
+  list.forEach(function(f) {
+    var statusDot = f.current_status === 'pooping' ? '🔴' : '⚪';
+    var statusText = f.current_status === 'pooping' ? '正在拉…' : '空闲中';
+    var card = document.createElement('div');
+    card.className = 'friend-card';
+    card.innerHTML =
+      '<div class="flex items-center gap-3 flex-1 min-w-0">' +
+        '<span style="font-size:16px">' + statusDot + '</span>' +
+        '<div>' +
+          '<div class="text-sm font-bold" style="color:#5D4037">' + escapeHtml(f.username) + '</div>' +
+          '<div class="text-[11px] font-semibold" style="color:#8D6E63">' + statusText + '</div>' +
+        '</div>' +
+      '</div>';
+    el.appendChild(card);
+  });
+}
+
+function loadFriendsView() {
+  loadPendingRequests();
+  loadFriendsList();
 }
 
 /* ==========================================================
