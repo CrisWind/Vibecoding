@@ -219,6 +219,17 @@ body::-webkit-scrollbar{display:none}
 .co-poop-lobby{background:linear-gradient(135deg,rgba(255,222,233,.35),rgba(252,243,207,.35));border:2px dashed #E8B4B8;border-radius:20px;padding:14px}
 .co-poop-item{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.75);border-radius:12px;padding:8px 12px;margin-top:6px}
 .pending-badge{background:#E88FAA;color:#fff;font-size:11px;font-weight:900;border-radius:9999px;padding:2px 8px;min-width:20px;text-align:center}
+
+/* v8: Leaderboard */
+.lb-card{background:#fff;border:1.5px solid rgba(214,234,248,.8);border-radius:16px;padding:10px 14px;display:flex;align-items:center;gap:12px;transition:transform .15s}
+.lb-card:active{transform:scale(.98)}
+.lb-card.lb-me{background:linear-gradient(135deg,rgba(255,222,233,.35),rgba(214,234,248,.2));border-color:#E8B4B8;box-shadow:0 2px 12px rgba(232,180,184,.15)}
+.lb-rank{font-size:20px;font-weight:900;width:32px;text-align:center;flex-shrink:0}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-size:13px;font-weight:800;color:#5D4037;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-stats{font-size:11px;color:#8D6E63;margin-top:2px}
+.lb-score{font-size:18px;font-weight:900;color:#E88FAA;flex-shrink:0;text-align:right}
+.lb-crown{animation:wiggle 2s ease-in-out infinite}
 </style>
 </head>
 <body class="min-h-screen select-none">
@@ -523,6 +534,16 @@ body::-webkit-scrollbar{display:none}
         </div>
         <div id="friendsList" class="space-y-2"></div>
         <div id="friendsEmpty" class="text-center text-xs font-bold py-3" style="color:#8D6E63">还没有好友，快去添加吧 ♡</div>
+      </div>
+      <!-- v8: Leaderboard -->
+      <div class="rounded-3xl p-5 shadow-sm" style="background:linear-gradient(135deg,rgba(252,243,207,.45),rgba(255,222,233,.35));border:2px solid rgba(232,180,184,.4)">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-sm font-bold" style="color:#5D4037">🏆 本周肠道达人榜</h3>
+          <button onclick="loadLeaderboard()" class="text-xs font-bold px-3 py-1.5 rounded-full active:scale-95 transition-transform" style="background:rgba(232,180,184,.2);color:#E88FAA">🔄 刷新</button>
+        </div>
+        <p class="text-[11px] font-semibold mb-3" style="color:#8D6E63">统计周期：本周一至今 · 打卡次数越多排名越高 ♡</p>
+        <div id="leaderboardList" class="space-y-2"></div>
+        <div id="leaderboardEmpty" class="text-center text-xs font-bold py-4" style="color:#8D6E63">加载中…</div>
       </div>
     </main>
   </div>
@@ -1814,6 +1835,52 @@ function renderFriendsList(list) {
 function loadFriendsView() {
   loadPendingRequests();
   loadFriendsList();
+  loadLeaderboard();
+}
+
+/* ==========================================================
+ * Leaderboard — 肠道达人排行榜 (v8)
+ * ========================================================== */
+
+async function loadLeaderboard() {
+  if (!currentUserId) return;
+  try {
+    var resp = await fetch(API_BASE + '/leaderboard', { headers: { 'X-User-Id': currentUserId } });
+    var json = await resp.json();
+    if (json.code === 200) {
+      renderLeaderboard(json.data || []);
+    }
+  } catch(e) { console.warn('loadLeaderboard:', e); }
+}
+
+function renderLeaderboard(list) {
+  var el = document.getElementById('leaderboardList');
+  var empty = document.getElementById('leaderboardEmpty');
+  if (!el) return;
+  if (list.length === 0) {
+    el.innerHTML = '';
+    if (empty) { empty.style.display = 'block'; empty.textContent = '暂无排行数据，快去打卡吧 ♡'; }
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  el.innerHTML = '';
+  var medals = ['🥇', '🥈', '🥉'];
+  list.forEach(function(item, idx) {
+    var card = document.createElement('div');
+    card.className = 'lb-card' + (item.is_me ? ' lb-me' : '') + ' anim-fade-in';
+    card.style.animationDelay = (idx * 0.08) + 's';
+    var rankText = item.rank <= 3 ? '<span class="lb-crown">' + medals[item.rank - 1] + '</span>' : '<span style="color:#8D6E63">' + item.rank + '</span>';
+    var meTag = item.is_me ? ' <span style="font-size:10px;color:#E88FAA;font-weight:900">← 我</span>' : '';
+    var crown = (item.rank === 1 && item.weekly_count > 0) ? ' 👑' : '';
+    card.innerHTML =
+      '<div class="lb-rank">' + rankText + '</div>' +
+      '<div class="lb-info">' +
+        '<div class="lb-name">' + escapeHtml(item.username) + meTag + crown + '</div>' +
+        '<div class="lb-stats">⏱ ' + item.weekly_duration + '分钟 · 🍌 ' + item.weekly_perfect + '次完美</div>' +
+      '</div>' +
+      '<div class="lb-score">' + item.weekly_count + '<span style="font-size:11px;font-weight:600;color:#8D6E63"> 次</span></div>';
+    el.appendChild(card);
+  });
 }
 
 /* ==========================================================
