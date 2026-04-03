@@ -3,7 +3,7 @@ import sqlite3
 import time
 import unicodedata
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_from_directory
 
 app = Flask(__name__)
@@ -381,6 +381,68 @@ def friend_list():
     conn.close()
     result = [{'friend_id': r['fid'], 'username': normalize_username(r['username']),
                'current_status': r['current_status']} for r in rows]
+    return jsonify({'code': 200, 'data': result}), 200
+
+
+# ================================================================== #
+# 肠道达人排行榜
+# ================================================================== #
+
+@app.route('/api/leaderboard', methods=['GET'])
+def leaderboard():
+    """本周肠道达人排行榜：统计用户及好友的本周打卡数据"""
+    user_id = get_current_user_id()
+    if user_id is None:
+        return jsonify({'code': 401, 'message': '未登录'}), 401
+
+    conn = get_db()
+    c = conn.cursor()
+
+    # 获取好友 ID 列表
+    c.execute('''SELECT CASE WHEN f.user_id_1 = ? THEN f.user_id_2 ELSE f.user_id_1 END AS fid
+        FROM friends f
+        WHERE (f.user_id_1 = ? OR f.user_id_2 = ?) AND f.status = 'accepted' ''',
+        (user_id, user_id, user_id))
+    friend_ids = [r['fid'] for r in c.fetchall()]
+
+    # 包含自己
+    all_ids = [user_id] + friend_ids
+
+    # 计算本周一 00:00
+    today = datetime.now()
+    monday = today - timedelta(days=today.weekday())
+    week_start = monday.strftime('%Y-%m-%d')
+
+    result = []
+    for uid in all_ids:
+        c.execute('SELECT username FROM users WHERE id = ?', (uid,))
+        user_row = c.fetchone()
+        if not user_row:
+            continue
+        uname = normalize_username(user_row['username'])
+
+        c.execute('''SELECT COUNT(*) AS cnt, COALESCE(SUM(duration_minutes), 0) AS total_dur,
+            SUM(CASE WHEN shape = 'perfect' THEN 1 ELSE 0 END) AS perfect_cnt
+            FROM checkin_logs WHERE user_id = ? AND record_time >= ?''',
+            (uid, week_start))
+        stats = c.fetchone()
+
+        result.append({
+            'user_id': uid,
+            'username': uname,
+            'is_me': uid == user_id,
+            'weekly_count': stats['cnt'] or 0,
+            'weekly_duration': stats['total_dur'] or 0,
+            'weekly_perfect': stats['perfect_cnt'] or 0
+        })
+
+    conn.close()
+
+    # 按打卡次数降序，次数相同按总时长升序（用时短更健康）
+    result.sort(key=lambda x: (-x['weekly_count'], x['weekly_duration']))
+    for i, item in enumerate(result):
+        item['rank'] = i + 1
+
     return jsonify({'code': 200, 'data': result}), 200
 
 
