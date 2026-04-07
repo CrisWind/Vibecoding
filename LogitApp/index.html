@@ -230,6 +230,26 @@ body::-webkit-scrollbar{display:none}
 .lb-stats{font-size:11px;color:#8D6E63;margin-top:2px}
 .lb-score{font-size:18px;font-weight:900;color:#E88FAA;flex-shrink:0;text-align:right}
 .lb-crown{animation:wiggle 2s ease-in-out infinite}
+
+/* v9: Badge System */
+@keyframes badge-glow{0%,100%{box-shadow:0 0 8px 2px rgba(255,215,0,.3)}50%{box-shadow:0 0 20px 6px rgba(255,215,0,.5)}}
+@keyframes badge-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes badge-pop{0%{transform:scale(.3) rotate(-10deg);opacity:0}60%{transform:scale(1.15) rotate(3deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+.badge-card{background:#fff;border:2px solid rgba(214,234,248,.8);border-radius:20px;padding:14px 8px;text-align:center;transition:all .3s;position:relative;overflow:hidden}
+.badge-card.unlocked{border-color:rgba(255,215,0,.5);background:linear-gradient(135deg,#FFFBF0,#FCF3CF)}
+.badge-card.unlocked .badge-icon-wrap{animation:badge-breathe 3s ease-in-out infinite}
+.badge-card.locked{filter:grayscale(80%);opacity:.65}
+.badge-card.locked .badge-icon-wrap{filter:grayscale(100%)}
+.badge-icon-wrap{font-size:32px;line-height:1;margin-bottom:6px}
+.badge-name{font-size:11px;font-weight:800;color:#5D4037;margin-bottom:2px}
+.badge-desc{font-size:10px;color:#8D6E63;line-height:1.3}
+.badge-unlock-time{font-size:9px;color:#E88FAA;font-weight:700;margin-top:4px}
+.badge-cat-tab{padding:6px 14px;border-radius:9999px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;transition:all .2s;border:2px solid transparent}
+.badge-cat-tab.active{background:#FCF3CF;border-color:#DEB887;color:#5D4037}
+.badge-cat-tab:not(.active){background:rgba(214,234,248,.3);color:#8D6E63}
+.badge-unlock-modal{position:fixed;inset:0;background:rgba(93,64,55,.25);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:9999;padding:24px}
+.badge-unlock-modal.show{display:flex}
+.badge-unlock-card{background:linear-gradient(135deg,#FFFBF0,#FCF3CF,#FFDEE9);border:3px solid rgba(255,215,0,.5);border-radius:32px;padding:32px 24px;text-align:center;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(255,215,0,.25);animation:badge-pop .5s cubic-bezier(.17,.67,.35,1.2) both}
 </style>
 </head>
 <body class="min-h-screen select-none">
@@ -285,6 +305,18 @@ body::-webkit-scrollbar{display:none}
       <div id="calModalList" class="space-y-3"></div>
       <div id="calModalEmpty" class="text-center text-sm font-bold" style="color:#E8B4B8;display:none;padding:18px 0">这天没有记录哟</div>
     </div>
+  </div>
+</div>
+
+<!-- Badge Unlock Modal -->
+<div id="badgeUnlockMask" class="badge-unlock-modal" onclick="if(event.target.id==='badgeUnlockMask') closeBadgeUnlockPopup()">
+  <div class="badge-unlock-card">
+    <div style="font-size:24px;margin-bottom:8px">🎉✨🎊</div>
+    <div id="badgeUnlockIcon" style="font-size:56px;margin-bottom:12px;animation:badge-breathe 2s ease-in-out infinite"></div>
+    <h3 class="text-lg font-extrabold" style="color:#5D4037">恭喜解锁新勋章！</h3>
+    <div id="badgeUnlockName" class="text-base font-extrabold mt-2" style="color:#E88FAA"></div>
+    <div id="badgeUnlockDesc" class="text-xs mt-2" style="color:#8D6E63"></div>
+    <button onclick="closeBadgeUnlockPopup()" class="mt-5 px-8 py-2.5 rounded-full text-white font-bold text-sm shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#FFD700,#FFA500)">太棒了 ♡</button>
   </div>
 </div>
 
@@ -548,6 +580,21 @@ body::-webkit-scrollbar{display:none}
     </main>
   </div>
 
+  <!-- VIEW: Badges -->
+  <div id="view-badges" class="hidden flex-1 overflow-y-auto pb-24" style="background:linear-gradient(180deg,#FFFBF0 0%,#FCF3CF 40%)">
+    <main class="px-5 pt-6 pb-4 space-y-5">
+      <div class="text-center">
+        <h2 class="text-lg font-extrabold" style="color:#5D4037">🏅 成就勋章墙</h2>
+        <p class="text-xs font-semibold mt-1" style="color:#8D6E63">收集所有勋章，成为传说中的肠道大师 ♡</p>
+      </div>
+      <div class="flex gap-2 overflow-x-auto pb-2" id="badgeCategoryTabs"></div>
+      <div id="badgeGrid" class="grid grid-cols-3 gap-3"></div>
+      <div id="badgeLoading" class="text-center py-8">
+        <p class="text-sm font-bold" style="color:#8D6E63">加载勋章中… ♡</p>
+      </div>
+    </main>
+  </div>
+
 </div>
 
 <!-- Bottom Nav -->
@@ -588,6 +635,12 @@ body::-webkit-scrollbar{display:none}
         <span style="font-size:18px">👫</span>
       </div>
       <span class="tab-label">好友</span>
+    </div>
+    <div class="tab-item flex flex-col items-center cursor-pointer" data-view="badges" onclick="switchView('badges',this)">
+      <div class="tab-icon" style="background:linear-gradient(135deg,rgba(252,243,207,.9),rgba(255,222,233,.35))">
+        <span style="font-size:18px">🏅</span>
+      </div>
+      <span class="tab-label">勋章</span>
     </div>
   </div>
 </nav>
@@ -751,7 +804,7 @@ function showToast(msg) {
 var currentView = 'checkin';
 var mapInited = false;
 var calendarInited = false;
-var ALL_VIEWS = ['checkin', 'map', 'calendar', 'health', 'friends'];
+var ALL_VIEWS = ['checkin', 'map', 'calendar', 'health', 'friends', 'badges'];
 
 function switchView(view, tabEl) {
   document.querySelectorAll('.tab-item').forEach(function(i){ i.classList.remove('active-tab'); });
@@ -768,6 +821,7 @@ function switchView(view, tabEl) {
   if (view === 'calendar') { initCalendar(); }
   if (view === 'checkin') { warmupCheckinLocation(); }
   if (view === 'friends') { loadFriendsView(); }
+  if (view === 'badges') { loadBadges(); }
 }
 
 /* ==========================================================
@@ -1186,12 +1240,16 @@ async function saveManualRecord() {
       body: JSON.stringify({ record_time: dt, duration_minutes: dur, shape: shp, color: color, location: addr || '未知位置' })
     });
     if (resp.status === 201) {
+      var respData = await resp.json().catch(function(){ return {}; });
       showToast('✅ 记录已保存 ♡');
       await fetchRecords();
       refreshCharts();
       if (calendarInited) renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
       fillDefaultDatetime();
       document.getElementById('manualDuration').value = '5';
+      if (respData.unlocked_badges && respData.unlocked_badges.length > 0) {
+        setTimeout(function(){ showBadgeUnlockPopup(respData.unlocked_badges); }, 500);
+      }
     } else {
       var err = await resp.json().catch(function(){ return {}; });
       showToast('⚠️ ' + (err.message || '保存失败'));
@@ -1290,11 +1348,15 @@ async function saveStopwatchRecord() {
       body: JSON.stringify({ record_time: recordTime, duration_minutes: dur, shape: shp, color: color, location: addr || '未知位置' })
     });
     if (resp.status === 201) {
+      var respData = await resp.json().catch(function(){ return {}; });
       showToast('✅ 计时记录已保存 ♡');
       await fetchRecords();
       refreshCharts();
       if (calendarInited) renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
       panel.classList.add('hidden');
+      if (respData.unlocked_badges && respData.unlocked_badges.length > 0) {
+        setTimeout(function(){ showBadgeUnlockPopup(respData.unlocked_badges); }, 500);
+      }
     } else {
       var err = await resp.json().catch(function(){ return {}; });
       showToast('⚠️ ' + (err.message || '保存失败'));
@@ -1881,6 +1943,114 @@ function renderLeaderboard(list) {
       '<div class="lb-score">' + item.weekly_count + '<span style="font-size:11px;font-weight:600;color:#8D6E63"> 次</span></div>';
     el.appendChild(card);
   });
+}
+
+/* ==========================================================
+ * Badge System (v9)
+ * ========================================================== */
+var badgeData = [];
+var badgeCurrentCategory = 'all';
+var BADGE_CATEGORY_COLORS = {
+  'time_streak': { bg: 'rgba(135,206,235,.15)', border: '#87CEEB', label: '⏰ 时间与毅力' },
+  'shape_property': { bg: 'rgba(168,216,185,.15)', border: '#A8D8B9', label: '✨ 形态与特征' },
+  'location': { bg: 'rgba(252,243,207,.15)', border: '#DEB887', label: '🗺️ 地理探索' },
+  'social': { bg: 'rgba(255,222,233,.15)', border: '#E8B4B8', label: '👫 社交与联机' },
+};
+
+async function loadBadges() {
+  if (!currentUserId) return;
+  var loading = document.getElementById('badgeLoading');
+  var grid = document.getElementById('badgeGrid');
+  if (loading) loading.style.display = 'block';
+  if (grid) grid.innerHTML = '';
+  try {
+    var resp = await fetch(API_BASE + '/badges', { headers: { 'X-User-Id': currentUserId } });
+    var json = await resp.json();
+    if (json.code === 200) {
+      badgeData = json.data || [];
+      renderBadgeCategoryTabs();
+      renderBadgeGrid(badgeCurrentCategory);
+    }
+  } catch(e) { console.warn('loadBadges:', e); }
+  if (loading) loading.style.display = 'none';
+}
+
+function renderBadgeCategoryTabs() {
+  var container = document.getElementById('badgeCategoryTabs');
+  if (!container) return;
+  var cats = [{ key: 'all', label: '🏅 全部' }];
+  Object.keys(BADGE_CATEGORY_COLORS).forEach(function(k) {
+    cats.push({ key: k, label: BADGE_CATEGORY_COLORS[k].label });
+  });
+  container.innerHTML = '';
+  cats.forEach(function(cat) {
+    var tab = document.createElement('div');
+    tab.className = 'badge-cat-tab' + (badgeCurrentCategory === cat.key ? ' active' : '');
+    tab.textContent = cat.label;
+    tab.onclick = function() {
+      badgeCurrentCategory = cat.key;
+      renderBadgeCategoryTabs();
+      renderBadgeGrid(cat.key);
+    };
+    container.appendChild(tab);
+  });
+}
+
+function renderBadgeGrid(category) {
+  var grid = document.getElementById('badgeGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  var filtered = category === 'all' ? badgeData : badgeData.filter(function(b) { return b.category === category; });
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="col-span-3 text-center py-8 text-sm font-bold" style="color:#8D6E63">暂无此分类勋章</div>';
+    return;
+  }
+  filtered.forEach(function(badge, idx) {
+    var card = document.createElement('div');
+    card.className = 'badge-card anim-fade-in ' + (badge.is_unlocked ? 'unlocked' : 'locked');
+    card.style.animationDelay = (idx * 0.06) + 's';
+    var catColor = BADGE_CATEGORY_COLORS[badge.category] || {};
+    if (badge.is_unlocked) {
+      card.style.borderColor = catColor.border || 'rgba(255,215,0,.5)';
+    }
+    var timeHtml = '';
+    if (badge.is_unlocked && badge.unlocked_at) {
+      var d = badge.unlocked_at.substring(0, 16).replace('T', ' ');
+      timeHtml = '<div class="badge-unlock-time">🔓 ' + d + '</div>';
+    } else {
+      timeHtml = '<div class="badge-desc" style="font-size:9px;margin-top:4px;color:#E88FAA">' + escapeHtml(badge.hint) + '</div>';
+    }
+    card.innerHTML =
+      '<div class="badge-icon-wrap">' + badge.icon + '</div>' +
+      '<div class="badge-name">' + escapeHtml(badge.name) + '</div>' +
+      '<div class="badge-desc">' + escapeHtml(badge.desc) + '</div>' +
+      timeHtml;
+    grid.appendChild(card);
+  });
+}
+
+function showBadgeUnlockPopup(badges) {
+  if (!badges || badges.length === 0) return;
+  var badge = badges[0];
+  var mask = document.getElementById('badgeUnlockMask');
+  var icon = document.getElementById('badgeUnlockIcon');
+  var name = document.getElementById('badgeUnlockName');
+  var desc = document.getElementById('badgeUnlockDesc');
+  if (icon) icon.textContent = badge.icon || '🏅';
+  if (name) name.textContent = '【' + (badge.name || '???') + '】';
+  if (desc) desc.textContent = badge.desc || '';
+  if (mask) mask.classList.add('show');
+  window._pendingBadgePopups = badges.slice(1);
+}
+
+function closeBadgeUnlockPopup() {
+  var mask = document.getElementById('badgeUnlockMask');
+  if (mask) mask.classList.remove('show');
+  if (window._pendingBadgePopups && window._pendingBadgePopups.length > 0) {
+    var next = window._pendingBadgePopups;
+    window._pendingBadgePopups = [];
+    setTimeout(function() { showBadgeUnlockPopup(next); }, 400);
+  }
 }
 
 /* ==========================================================
