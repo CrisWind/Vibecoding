@@ -21,6 +21,115 @@ def get_db():
     return conn
 
 
+# ================================================================== #
+# 勋章目录 — 4 大分类 15 枚勋章
+# ================================================================== #
+
+BADGE_CATALOG = {
+    # ---- 时间与毅力类 (time_streak) ----
+    'early_bird': {
+        'name': '早鸟先飞', 'icon': '🐦',
+        'desc': '在早上 4:00-7:00 之间完成打卡',
+        'hint': '如何获得：在早上 4:00-7:00 之间打卡',
+        'category': 'time_streak',
+    },
+    'night_owl': {
+        'name': '暗夜精灵', 'icon': '🦉',
+        'desc': '在凌晨 0:00-3:00 之间完成打卡',
+        'hint': '如何获得：在凌晨 0:00-3:00 之间打卡',
+        'category': 'time_streak',
+    },
+    'warrior': {
+        'name': '便秘战士', 'icon': '⚔️',
+        'desc': '单次打卡耗时超过 30 分钟',
+        'hint': '如何获得：单次耗时超过 30 分钟',
+        'category': 'time_streak',
+    },
+    'flash': {
+        'name': '闪电突击', 'icon': '⚡',
+        'desc': '单次打卡耗时 ≤ 3 分钟',
+        'hint': '如何获得：单次耗时少于等于 3 分钟',
+        'category': 'time_streak',
+    },
+    'streak_3': {
+        'name': '初级自律', 'icon': '🔥',
+        'desc': '连续 3 天打卡不间断',
+        'hint': '如何获得：连续 3 天不间断打卡',
+        'category': 'time_streak',
+    },
+    'streak_7': {
+        'name': '肠胃管理大师', 'icon': '👑',
+        'desc': '连续 7 天不间断打卡',
+        'hint': '如何获得：连续 7 天不间断打卡',
+        'category': 'time_streak',
+    },
+    # ---- 形态与特征类 (shape_property) ----
+    'golden_perfect': {
+        'name': '天选之子', 'icon': '✨',
+        'desc': '形态为"完美"且颜色为"金黄"',
+        'hint': '如何获得：打卡形态为"完美"且颜色为"金黄"',
+        'category': 'shape_property',
+    },
+    'hard_rock': {
+        'name': '坚如磐石', 'icon': '🪨',
+        'desc': '连续 2 次形态都是"干燥"',
+        'hint': '如何获得：连续 2 次形态都是"干燥"',
+        'category': 'shape_property',
+    },
+    'liquid_warning': {
+        'name': '喷射战士', 'icon': '💦',
+        'desc': '形态为"稀软/腹泻"',
+        'hint': '如何获得：打卡形态为"稀软"',
+        'category': 'shape_property',
+    },
+    # ---- 地理探索类 (location) ----
+    'homebody': {
+        'name': '画地为牢', 'icon': '🏠',
+        'desc': '在同一个位置连续打卡 5 次',
+        'hint': '如何获得：在同一个位置连续打卡 5 次',
+        'category': 'location',
+    },
+    'explorer': {
+        'name': '四海为家', 'icon': '🗺️',
+        'desc': '在 3 个不同地址留下记录',
+        'hint': '如何获得：在 3 个完全不同的地址打卡',
+        'category': 'location',
+    },
+    'wild_pooper': {
+        'name': '野外求生', 'icon': '🏕️',
+        'desc': '在公厕/卫生间/洗手间打卡',
+        'hint': '如何获得：位置名称包含"公厕""卫生间"或"洗手间"',
+        'category': 'location',
+    },
+    # ---- 社交与联机类 (social) ----
+    'first_blood_social': {
+        'name': '破冰行动', 'icon': '🤝',
+        'desc': '成功添加第一个好友',
+        'hint': '如何获得：成功添加第一个好友',
+        'category': 'social',
+    },
+    'sync_master': {
+        'name': '心有灵犀', 'icon': '💞',
+        'desc': '与好友同时处于打卡状态时保存记录',
+        'hint': '如何获得：在联机大厅中与好友同时打卡时保存',
+        'category': 'social',
+    },
+    'social_butterfly': {
+        'name': '交际花', 'icon': '🦋',
+        'desc': '好友列表达到 5 人',
+        'hint': '如何获得：好友列表达到 5 人',
+        'category': 'social',
+    },
+}
+
+CATEGORY_META = {
+    'time_streak':    {'name': '⏰ 时间与毅力', 'order': 1},
+    'shape_property': {'name': '✨ 形态与特征', 'order': 2},
+    'location':       {'name': '🗺️ 地理探索',   'order': 3},
+    'social':         {'name': '👫 社交与联机', 'order': 4},
+}
+
+
 def init_db():
     conn = get_db()
     c = conn.cursor()
@@ -64,6 +173,18 @@ def init_db():
         )
     ''')
 
+    # v9: user_badges 表（勋章解锁记录）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS user_badges (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id     INTEGER NOT NULL,
+            badge_key   TEXT    NOT NULL,
+            unlocked_at TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            UNIQUE(user_id, badge_key)
+        )
+    ''')
+
     # 安全迁移：给旧库补字段
     for sql in [
         'ALTER TABLE checkin_logs ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1',
@@ -85,10 +206,10 @@ def init_db():
             try:
                 c.execute('UPDATE users SET username = ? WHERE id = ?', (clean, row['id']))
             except sqlite3.IntegrityError:
-                pass  # 归一化后与其他用户重名，跳过
+                pass
     conn.commit()
 
-    # 迁移：合并归一化后重名的重复用户（修复重复注册问题）
+    # 迁移：合并归一化后重名的重复用户
     c.execute('SELECT username FROM users GROUP BY username HAVING COUNT(*) > 1')
     dupes = [row['username'] for row in c.fetchall()]
     for dup_name in dupes:
@@ -102,7 +223,6 @@ def init_db():
             c.execute('UPDATE friends SET user_id_1 = ? WHERE user_id_1 = ?', (keeper, old_id))
             c.execute('UPDATE friends SET user_id_2 = ? WHERE user_id_2 = ?', (keeper, old_id))
             c.execute('DELETE FROM users WHERE id = ?', (old_id,))
-    # 清理自引用和重复好友记录
     c.execute('DELETE FROM friends WHERE user_id_1 = user_id_2')
     conn.commit()
     conn.close()
@@ -112,12 +232,9 @@ def normalize_username(name):
     """统一处理用户名：去除不可见字符、全角空格、Unicode 归一化"""
     if not name:
         return ''
-    # Unicode NFC 归一化（统一组合字符）
     name = unicodedata.normalize('NFC', name)
-    # 去除零宽字符、不可见控制字符
-    name = re.sub(r'[‌‍﻿­]', '', name)
-    # 将全角空格替换为半角空格，再 strip
-    name = name.replace('　', ' ').strip()
+    name = re.sub(r'[\u200c\u200d\ufeff\u00ad]', '', name)
+    name = name.replace('\u3000', ' ').strip()
     return name
 
 
@@ -130,6 +247,220 @@ def get_current_user_id():
         return uid_int if uid_int > 0 else None
     except (ValueError, TypeError):
         return None
+
+
+# ================================================================== #
+# 勋章引擎 — check_and_award_badges
+# ================================================================== #
+
+def _user_has_badge(c, user_id, badge_key):
+    """检查用户是否已拥有某勋章"""
+    c.execute('SELECT 1 FROM user_badges WHERE user_id = ? AND badge_key = ?', (user_id, badge_key))
+    return c.fetchone() is not None
+
+
+def _award_badge(c, user_id, badge_key, now_str):
+    """写入勋章记录，返回 True 表示新解锁"""
+    try:
+        c.execute('INSERT INTO user_badges (user_id, badge_key, unlocked_at) VALUES (?, ?, ?)',
+                  (user_id, badge_key, now_str))
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+
+def _get_consecutive_streak(c, user_id, today_str):
+    """计算截止到 today_str（含）的连续打卡天数"""
+    c.execute('''
+        SELECT DISTINCT DATE(record_time) AS d
+        FROM checkin_logs
+        WHERE user_id = ?
+        ORDER BY d DESC
+    ''', (user_id,))
+    dates = [row['d'] for row in c.fetchall()]
+    if not dates:
+        return 0
+    streak = 0
+    check_date = datetime.strptime(today_str[:10], '%Y-%m-%d').date()
+    for d_str in dates:
+        d = datetime.strptime(d_str, '%Y-%m-%d').date()
+        if d == check_date:
+            streak += 1
+            check_date -= timedelta(days=1)
+        elif d < check_date:
+            break
+    return streak
+
+
+def check_and_award_badges(user_id, current_record):
+    """
+    统一勋章判断引擎。在打卡记录保存后调用。
+    current_record: dict with keys record_time, duration_minutes, shape, color, location
+    返回: list of newly unlocked badge dicts
+    """
+    conn = get_db()
+    c = conn.cursor()
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    newly_unlocked = []
+
+    def try_award(badge_key):
+        if not _user_has_badge(c, user_id, badge_key):
+            if _award_badge(c, user_id, badge_key, now_str):
+                info = BADGE_CATALOG[badge_key].copy()
+                info['key'] = badge_key
+                info['unlocked_at'] = now_str
+                newly_unlocked.append(info)
+
+    # 解析打卡时间的小时
+    record_time_str = str(current_record.get('record_time', ''))
+    record_hour = None
+    try:
+        if 'T' in record_time_str:
+            record_hour = int(record_time_str.split('T')[1].split(':')[0])
+        elif ' ' in record_time_str:
+            record_hour = int(record_time_str.split(' ')[1].split(':')[0])
+    except (IndexError, ValueError):
+        pass
+
+    duration = current_record.get('duration_minutes', 5)
+    shape = str(current_record.get('shape', '')).strip()
+    color = str(current_record.get('color', '')).strip().upper()
+    location = str(current_record.get('location', '')).strip()
+
+    # ---- 时间与毅力类 ----
+    # 1. early_bird: 4:00-6:59
+    if record_hour is not None and 4 <= record_hour <= 6:
+        try_award('early_bird')
+
+    # 2. night_owl: 0:00-2:59
+    if record_hour is not None and 0 <= record_hour <= 2:
+        try_award('night_owl')
+
+    # 3. warrior: 耗时 > 30 分钟
+    if duration > 30:
+        try_award('warrior')
+
+    # 4. flash: 耗时 <= 3 分钟
+    if duration <= 3:
+        try_award('flash')
+
+    # 5 & 6. streak_3 / streak_7: 连续打卡天数
+    today_str = record_time_str[:10] if len(record_time_str) >= 10 else datetime.now().strftime('%Y-%m-%d')
+    streak = _get_consecutive_streak(c, user_id, today_str)
+    if streak >= 3:
+        try_award('streak_3')
+    if streak >= 7:
+        try_award('streak_7')
+
+    # ---- 形态与特征类 ----
+    # 7. golden_perfect: perfect + 金黄 #C4A35A
+    if shape == 'perfect' and color in ('#C4A35A', 'RGB(196, 163, 90)', 'RGB(196,163,90)'):
+        try_award('golden_perfect')
+
+    # 8. hard_rock: 连续 2 次 dry
+    if shape == 'dry':
+        c.execute('''
+            SELECT shape FROM checkin_logs
+            WHERE user_id = ? ORDER BY id DESC LIMIT 2
+        ''', (user_id,))
+        last_shapes = [r['shape'] for r in c.fetchall()]
+        if len(last_shapes) >= 2 and all(s == 'dry' for s in last_shapes):
+            try_award('hard_rock')
+
+    # 9. liquid_warning: 稀软
+    if shape == 'soft':
+        try_award('liquid_warning')
+
+    # ---- 地理探索类 ----
+    # 10. homebody: 同一位置连续 5 次
+    if location:
+        c.execute('''
+            SELECT location FROM checkin_logs
+            WHERE user_id = ? ORDER BY id DESC LIMIT 5
+        ''', (user_id,))
+        last_locs = [r['location'] for r in c.fetchall()]
+        if len(last_locs) >= 5 and all(l == last_locs[0] and l for l in last_locs):
+            try_award('homebody')
+
+    # 11. explorer: 3 个不同地址
+    c.execute('''
+        SELECT COUNT(DISTINCT location) AS cnt
+        FROM checkin_logs
+        WHERE user_id = ? AND location != '' AND location != '未知位置'
+    ''', (user_id,))
+    distinct_locs = c.fetchone()['cnt']
+    if distinct_locs >= 3:
+        try_award('explorer')
+
+    # 12. wild_pooper: 位置含公厕/卫生间/洗手间
+    if location:
+        for keyword in ('公厕', '卫生间', '洗手间'):
+            if keyword in location:
+                try_award('wild_pooper')
+                break
+
+    # ---- 社交与联机类 ----
+    # 13. first_blood_social: 至少 1 个好友（在打卡时也顺便检查）
+    c.execute('''
+        SELECT COUNT(*) AS cnt FROM friends
+        WHERE (user_id_1 = ? OR user_id_2 = ?) AND status = 'accepted'
+    ''', (user_id, user_id))
+    friend_count = c.fetchone()['cnt']
+    if friend_count >= 1:
+        try_award('first_blood_social')
+
+    # 14. sync_master: 有好友正在 pooping
+    c.execute('''
+        SELECT COUNT(*) AS cnt
+        FROM friends f JOIN users u ON (
+            (f.user_id_1 = ? AND u.id = f.user_id_2) OR
+            (f.user_id_2 = ? AND u.id = f.user_id_1)
+        )
+        WHERE f.status = 'accepted'
+          AND u.current_status = 'pooping'
+          AND u.poop_start_time IS NOT NULL
+    ''', (user_id, user_id))
+    pooping_friends = c.fetchone()['cnt']
+    if pooping_friends > 0:
+        try_award('sync_master')
+
+    # 15. social_butterfly: 好友 >= 5
+    if friend_count >= 5:
+        try_award('social_butterfly')
+
+    conn.commit()
+    conn.close()
+    return newly_unlocked
+
+
+def check_social_badges_on_friend_accept(user_id):
+    """接受好友后检查社交类勋章"""
+    conn = get_db()
+    c = conn.cursor()
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    newly_unlocked = []
+
+    def try_award(badge_key):
+        if not _user_has_badge(c, user_id, badge_key):
+            if _award_badge(c, user_id, badge_key, now_str):
+                info = BADGE_CATALOG[badge_key].copy()
+                info['key'] = badge_key
+                info['unlocked_at'] = now_str
+                newly_unlocked.append(info)
+
+    c.execute('''
+        SELECT COUNT(*) AS cnt FROM friends
+        WHERE (user_id_1 = ? OR user_id_2 = ?) AND status = 'accepted'
+    ''', (user_id, user_id))
+    friend_count = c.fetchone()['cnt']
+    if friend_count >= 1:
+        try_award('first_blood_social')
+    if friend_count >= 5:
+        try_award('social_butterfly')
+
+    conn.commit()
+    conn.close()
+    return newly_unlocked
 
 
 # ================================================================== #
@@ -163,7 +494,6 @@ def api_login():
     c = conn.cursor()
     c.execute('SELECT id, username FROM users WHERE TRIM(username) = ? COLLATE NOCASE', (username,))
     row = c.fetchone()
-    # SQL 匹配失败时，Python 端归一化逐条比对
     if not row:
         c.execute('SELECT id, username FROM users')
         for u in c.fetchall():
@@ -171,7 +501,6 @@ def api_login():
                 row = u
                 break
     if row:
-        # 始终同步存储的用户名为归一化版本
         c.execute('UPDATE users SET username = ? WHERE id = ?', (username, row['id']))
         conn.commit()
         conn.close()
@@ -186,7 +515,7 @@ def api_login():
 
 
 # ================================================================== #
-# 打卡记录 CRUD
+# 打卡记录 CRUD（v9: 集成勋章触发）
 # ================================================================== #
 
 @app.route('/api/records', methods=['GET'])
@@ -236,7 +565,18 @@ def add_record():
     conn.commit()
     new_id = c.lastrowid
     conn.close()
-    return jsonify({'code': 201, 'id': new_id}), 201
+
+    # v9: 触发勋章检查
+    current_record = {
+        'record_time': record_time,
+        'duration_minutes': duration_minutes,
+        'shape': shape,
+        'color': color,
+        'location': location,
+    }
+    unlocked = check_and_award_badges(user_id, current_record)
+
+    return jsonify({'code': 201, 'id': new_id, 'unlocked_badges': unlocked}), 201
 
 
 @app.route('/api/records/<int:record_id>', methods=['DELETE'])
@@ -257,12 +597,49 @@ def delete_record(record_id):
 
 
 # ================================================================== #
-# 好友系统
+# v9: 勋章图鉴接口
+# ================================================================== #
+
+@app.route('/api/badges', methods=['GET'])
+def get_badges():
+    user_id = get_current_user_id()
+    if user_id is None:
+        return jsonify({'code': 401, 'message': '未登录'}), 401
+
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT badge_key, unlocked_at FROM user_badges WHERE user_id = ?', (user_id,))
+    unlocked_map = {}
+    for row in c.fetchall():
+        unlocked_map[row['badge_key']] = row['unlocked_at']
+    conn.close()
+
+    result = []
+    for key, info in BADGE_CATALOG.items():
+        is_unlocked = key in unlocked_map
+        result.append({
+            'key': key,
+            'name': info['name'],
+            'icon': info['icon'],
+            'desc': info['desc'],
+            'hint': info['hint'],
+            'category': info['category'],
+            'category_name': CATEGORY_META.get(info['category'], {}).get('name', ''),
+            'category_order': CATEGORY_META.get(info['category'], {}).get('order', 99),
+            'is_unlocked': is_unlocked,
+            'unlocked_at': unlocked_map.get(key, None),
+        })
+
+    result.sort(key=lambda x: (x['category_order'], x['key']))
+    return jsonify({'code': 200, 'data': result, 'categories': CATEGORY_META}), 200
+
+
+# ================================================================== #
+# 好友系统（v9: 集成社交勋章）
 # ================================================================== #
 
 @app.route('/api/friends/request', methods=['POST'])
 def friend_request():
-    """发送好友申请（按 username 搜索）"""
     user_id = get_current_user_id()
     if user_id is None:
         return jsonify({'code': 401, 'message': '未登录'}), 401
@@ -273,15 +650,12 @@ def friend_request():
 
     conn = get_db()
     c = conn.cursor()
-    # 先精确匹配（忽略大小写 + 去首尾空格）
     c.execute('SELECT id FROM users WHERE TRIM(username) = ? COLLATE NOCASE', (target_name,))
     target = c.fetchone()
-    # 精确匹配失败时，用 LIKE 模糊兜底
     if not target:
         c.execute('SELECT id FROM users WHERE TRIM(username) LIKE ? COLLATE NOCASE', (target_name,))
         target = c.fetchone()
     if not target:
-        # Python 端逐条归一化比对（终极兜底）
         c.execute('SELECT id, username FROM users')
         for u in c.fetchall():
             if normalize_username(u['username']) == target_name:
@@ -315,7 +689,6 @@ def friend_request():
 
 @app.route('/api/friends/pending', methods=['GET'])
 def friend_pending():
-    """获取别人发给我的待处理好友申请"""
     user_id = get_current_user_id()
     if user_id is None:
         return jsonify({'code': 401, 'message': '未登录'}), 401
@@ -334,7 +707,6 @@ def friend_pending():
 
 @app.route('/api/friends/accept', methods=['POST'])
 def friend_accept():
-    """接受或拒绝好友申请"""
     user_id = get_current_user_id()
     if user_id is None:
         return jsonify({'code': 401, 'message': '未登录'}), 401
@@ -348,7 +720,8 @@ def friend_accept():
     c = conn.cursor()
     c.execute('SELECT * FROM friends WHERE id = ? AND user_id_2 = ? AND status = ?',
               (rid, user_id, 'pending'))
-    if not c.fetchone():
+    friend_row = c.fetchone()
+    if not friend_row:
         conn.close()
         return jsonify({'code': 404, 'message': '申请不存在或已处理'}), 404
 
@@ -356,6 +729,9 @@ def friend_accept():
         c.execute('UPDATE friends SET status = ? WHERE id = ?', ('accepted', rid))
         conn.commit()
         conn.close()
+        # v9: 双方都检查社交勋章
+        check_social_badges_on_friend_accept(user_id)
+        check_social_badges_on_friend_accept(friend_row['user_id_1'])
         return jsonify({'code': 200, 'message': '好友添加成功 ♡'}), 200
     else:
         c.execute('DELETE FROM friends WHERE id = ?', (rid,))
@@ -366,7 +742,6 @@ def friend_accept():
 
 @app.route('/api/friends', methods=['GET'])
 def friend_list():
-    """获取我的已通过好友列表"""
     user_id = get_current_user_id()
     if user_id is None:
         return jsonify({'code': 401, 'message': '未登录'}), 401
@@ -390,7 +765,6 @@ def friend_list():
 
 @app.route('/api/leaderboard', methods=['GET'])
 def leaderboard():
-    """本周肠道达人排行榜：统计用户及好友的本周打卡数据"""
     user_id = get_current_user_id()
     if user_id is None:
         return jsonify({'code': 401, 'message': '未登录'}), 401
@@ -398,17 +772,14 @@ def leaderboard():
     conn = get_db()
     c = conn.cursor()
 
-    # 获取好友 ID 列表
     c.execute('''SELECT CASE WHEN f.user_id_1 = ? THEN f.user_id_2 ELSE f.user_id_1 END AS fid
         FROM friends f
         WHERE (f.user_id_1 = ? OR f.user_id_2 = ?) AND f.status = 'accepted' ''',
         (user_id, user_id, user_id))
     friend_ids = [r['fid'] for r in c.fetchall()]
 
-    # 包含自己
     all_ids = [user_id] + friend_ids
 
-    # 计算本周一 00:00
     today = datetime.now()
     monday = today - timedelta(days=today.weekday())
     week_start = monday.strftime('%Y-%m-%d')
@@ -438,7 +809,6 @@ def leaderboard():
 
     conn.close()
 
-    # 按打卡次数降序，次数相同按总时长升序（用时短更健康）
     result.sort(key=lambda x: (-x['weekly_count'], x['weekly_duration']))
     for i, item in enumerate(result):
         item['rank'] = i + 1
@@ -452,7 +822,6 @@ def leaderboard():
 
 @app.route('/api/status', methods=['POST'])
 def update_status():
-    """更新我的当前状态 (pooping / idle)"""
     user_id = get_current_user_id()
     if user_id is None:
         return jsonify({'code': 401, 'message': '未登录'}), 401
@@ -476,7 +845,6 @@ def update_status():
 
 @app.route('/api/friends/active', methods=['GET'])
 def friends_active():
-    """查询当前正在 pooping 的好友，返回持续秒数"""
     user_id = get_current_user_id()
     if user_id is None:
         return jsonify({'code': 401, 'message': '未登录'}), 401
@@ -501,7 +869,6 @@ def friends_active():
 # 启动
 # ================================================================== #
 
-# 必须在模块顶层调用，确保 WSGI 部署时也能初始化数据库
 init_db()
 
 if __name__ == '__main__':
