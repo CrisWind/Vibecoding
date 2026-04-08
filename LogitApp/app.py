@@ -6,6 +6,7 @@ import re
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_from_directory
 from zhipuai import ZhipuAI
+import random
 
 app = Flask(__name__)
 
@@ -196,6 +197,8 @@ def init_db():
         'ALTER TABLE checkin_logs ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1',
         "ALTER TABLE users ADD COLUMN current_status TEXT NOT NULL DEFAULT 'idle'",
         'ALTER TABLE users ADD COLUMN poop_start_time REAL DEFAULT NULL',
+        'ALTER TABLE users ADD COLUMN lat REAL DEFAULT NULL',
+        'ALTER TABLE users ADD COLUMN lng REAL DEFAULT NULL',
     ]:
         try:
             c.execute(sql)
@@ -416,6 +419,7 @@ def check_and_award_badges(user_id, current_record):
         try_award('first_blood_social')
 
     # 14. sync_master: 有好友正在 pooping
+    two_hours_ago = time.time() - 7200
     c.execute('''
         SELECT COUNT(*) AS cnt
         FROM friends f JOIN users u ON (
@@ -425,7 +429,8 @@ def check_and_award_badges(user_id, current_record):
         WHERE f.status = 'accepted'
           AND u.current_status = 'pooping'
           AND u.poop_start_time IS NOT NULL
-    ''', (user_id, user_id))
+          AND u.poop_start_time >= ?
+    ''', (user_id, user_id, two_hours_ago))
     pooping_friends = c.fetchone()['cnt']
     if pooping_friends > 0:
         try_award('sync_master')
@@ -838,11 +843,13 @@ def update_status():
 
     conn = get_db()
     c = conn.cursor()
+    lat = data.get('lat', None)
+    lng = data.get('lng', None)
     if status == 'pooping':
-        c.execute('UPDATE users SET current_status = ?, poop_start_time = ? WHERE id = ?',
-                  (status, time.time(), user_id))
+        c.execute('UPDATE users SET current_status = ?, poop_start_time = ?, lat = ?, lng = ? WHERE id = ?',
+                  (status, time.time(), lat, lng, user_id))
     else:
-        c.execute('UPDATE users SET current_status = ?, poop_start_time = NULL WHERE id = ?',
+        c.execute('UPDATE users SET current_status = ?, poop_start_time = NULL, lat = NULL, lng = NULL WHERE id = ?',
                   (status, user_id))
     conn.commit()
     conn.close()
@@ -856,13 +863,16 @@ def friends_active():
         return jsonify({'code': 401, 'message': '未登录'}), 401
     conn = get_db()
     c = conn.cursor()
+    # 过滤掉超过 2 小时的僵尸状态
+    two_hours_ago = time.time() - 7200
     c.execute('''SELECT u.id AS fid, u.username, u.poop_start_time
         FROM friends f JOIN users u ON (
             (f.user_id_1 = ? AND u.id = f.user_id_2) OR
             (f.user_id_2 = ? AND u.id = f.user_id_1)
         ) WHERE f.status = 'accepted'
           AND u.current_status = 'pooping'
-          AND u.poop_start_time IS NOT NULL''', (user_id, user_id))
+          AND u.poop_start_time IS NOT NULL
+          AND u.poop_start_time >= ?''', (user_id, user_id, two_hours_ago))
     rows = c.fetchall()
     conn.close()
     now = time.time()
@@ -988,6 +998,40 @@ def weekly_report():
             return jsonify({'code': 500, 'message': '智谱 AI 响应超时，请稍后再试 ⏱️'}), 500
         else:
             return jsonify({'code': 500, 'message': f'AI 分析失败：{error_msg} 😢'}), 500
+
+
+# ================================================================== #
+# v11: 附近屎友匿名热力图 (Poop Heatmap)
+# ================================================================== #
+
+@app.route('/api/heatmap/data', methods=['GET'])
+def heatmap_data():
+    """返回所有正在 pooping 的用户的加噪坐标，供前端热力图渲染"""
+    conn = get_db()
+    c = conn.cursor()
+    # 过滤掉超过 2 小时的“幽灵屎友”
+    two_hours_ago = time.time() - 7200
+    c.execute('''
+        SELECT lat, lng FROM users
+        WHERE current_status = 'pooping'
+          AND lat IS NOT NULL
+          AND lng IS NOT NULL
+          AND poop_start_time >= ?
+    ''', (two_hours_ago,))
+    rows = c.fetchall()
+    conn.close()
+
+    result = []
+    for row in rows:
+        noisy_lat = row['lat'] + random.uniform(-0.005, 0.005)
+        noisy_lng = row['lng'] + random.uniform(-0.005, 0.005)
+        result.append({
+            'lat': round(noisy_lat, 6),
+            'lng': round(noisy_lng, 6),
+            'count': 1
+        })
+
+    return jsonify(result), 200
 
 
 # ================================================================== #
