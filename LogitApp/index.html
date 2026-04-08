@@ -21,7 +21,7 @@ tailwind.config={theme:{extend:{colors:{cream:'#FFFBF0','ck-pink':'#FFDEE9','ck-
 <!-- ✅ AMap Security Config (必须在 AMap 脚本前) -->
 <script>window._AMapSecurityConfig = { securityJsCode: '66fdd546bbe4d83be54e4a838bd3d9db' };</script>
 <!-- ✅ AMap JS API 2.0 + Plugins -->
-<script src="https://webapi.amap.com/maps?v=2.0&key=76f8983290786ddae7f173405ef81903&plugin=AMap.Geolocation,AMap.PlaceSearch,AMap.Geocoder,AMap.CitySearch"></script>
+<script src="https://webapi.amap.com/maps?v=2.0&key=76f8983290786ddae7f173405ef81903&plugin=AMap.Geolocation,AMap.PlaceSearch,AMap.Geocoder,AMap.CitySearch,AMap.HeatMap"></script>
 
 <style>
 *{font-family:'Quicksand',system-ui,sans-serif}
@@ -292,6 +292,26 @@ body::-webkit-scrollbar{display:none}
 }
 .ai-report-body{padding:18px 20px;font-size:14px;color:#5D4037;line-height:1.7;white-space:pre-wrap;word-break:break-word}
 .ai-report-footer{padding:12px 20px 20px;text-align:center}
+
+/* v11: Heatmap Toggle */
+.heatmap-toggle-btn{
+  position:absolute;top:52px;right:12px;z-index:700;
+  display:flex;align-items:center;gap:6px;
+  padding:10px 16px;border-radius:9999px;
+  background:rgba(255,251,240,.75);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:2px solid rgba(255,222,233,.7);
+  box-shadow:0 4px 20px rgba(232,180,184,.25);
+  font-size:13px;font-weight:800;color:#5D4037;
+  cursor:pointer;transition:all .3s;
+  font-family:'Quicksand',sans-serif;
+}
+.heatmap-toggle-btn:active{transform:scale(.96);opacity:.9}
+.heatmap-toggle-btn.heatmap-active{
+  background:linear-gradient(135deg,rgba(255,222,233,.85),rgba(232,180,184,.55));
+  border-color:#E88FAA;color:#9B2D6B;
+  box-shadow:0 4px 20px rgba(232,143,170,.35),0 0 12px 3px rgba(232,143,170,.2);
+}
 </style>
 </head>
 <body class="min-h-screen select-none">
@@ -549,6 +569,7 @@ body::-webkit-scrollbar{display:none}
       <p class="text-sm font-bold mt-2" style="color:#8D6E63">正在定位…</p>
     </div>
     <div id="map"></div>
+    <button id="heatmapToggleBtn" class="heatmap-toggle-btn" onclick="toggleHeatmap()">🔥 附近屎友热力图</button>
   </div>
 
   <!-- VIEW: Calendar -->
@@ -1005,7 +1026,7 @@ function reverseGeocode(lng, lat, cb) {
     geocoder.getAddress([lng, lat], function(status, result) {
       if (status === 'complete' && result.regeocode) {
         var addr = result.regeocode.formattedAddress || '未知位置';
-        lastCheckinLocation = { text: addr, ts: Date.now() };
+        lastCheckinLocation = { text: addr, ts: Date.now(), lat: lat, lng: lng };
         if (!manualOverrideLocation) setCheckinLocationText(addr);
         cb && cb(manualOverrideLocation || addr);
       } else {
@@ -1043,7 +1064,7 @@ function tryAMapGeolocation(cb) {
           addr = (ac.province||'') + (ac.city||'') + (ac.district||'') + (ac.township||'');
         }
         addr = addr || '未知位置';
-        lastCheckinLocation = { text: addr, ts: Date.now() };
+        lastCheckinLocation = { text: addr, ts: Date.now(), lat: result.position.lat, lng: result.position.lng };
         if (!manualOverrideLocation) setCheckinLocationText(addr);
         cb && cb(manualOverrideLocation || addr);
       } else {
@@ -1062,7 +1083,7 @@ function tryIPFallback(cb) {
     citySearch.getLocalCity(function(status, result) {
       if (status === 'complete' && result && result.city) {
         var addr = (result.province || '') + result.city + '（IP定位）';
-        lastCheckinLocation = { text: addr, ts: Date.now() };
+        lastCheckinLocation = { text: addr, ts: Date.now(), lat: c.lat, lng: c.lng };
         if (!manualOverrideLocation) setCheckinLocationText(addr);
         cb && cb(manualOverrideLocation || addr);
       } else {
@@ -1359,7 +1380,7 @@ function startStopwatch() {
   document.getElementById('swResultPanel').classList.add('hidden');
   document.getElementById('swMain').classList.remove('hidden');
   warmupCheckinLocation();
-  setMyStatus('pooping');
+  setMyStatusWithLocation('pooping');
   startCoPoopPolling();
   swInterval = setInterval(function() {
     swElapsed = Math.floor((Date.now() - swStartTime) / 1000);
@@ -1516,6 +1537,7 @@ function initMap() {
   mapInited = true;
   amap = new AMap.Map('map', { zoom: 16, center: [FALLBACK_LNG, FALLBACK_LAT], viewMode: '2D', mapStyle: 'amap://styles/macaron' });
   infoWin = new AMap.InfoWindow({ isCustom: true, offset: new AMap.Pixel(0, -36) });
+  initHeatmap();
   // ✅ 地图点击 → 逆地理编码获取街道名
   amap.on('click', function(e) {
     var lnglat = e.lnglat;
@@ -1680,6 +1702,113 @@ function searchToiletsAround(lat, lng) {
       }
     });
   });
+}
+
+/* ==========================================================
+ * v11: Poop Heatmap (附近屎友匿名热力图)
+ * ========================================================== */
+var heatmapLayer = null;
+var heatmapVisible = false;
+var heatmapRefreshTimer = null;
+
+function initHeatmap() {
+  if (heatmapLayer || !amap) return;
+  try {
+    heatmapLayer = new AMap.HeatMap(amap, {
+      radius: 25,
+      opacity: [0, 0.85],
+      gradient: {
+        0.15: '#FFDEE9',
+        0.35: '#F5B7C5',
+        0.55: '#E88FAA',
+        0.75: '#D45B8A',
+        0.90: '#9B2D6B',
+        1.0:  '#6A1B4D'
+      }
+    });
+    heatmapLayer.hide();
+  } catch(e) { console.warn('HeatMap init failed:', e); }
+}
+
+async function fetchHeatmapData() {
+  try {
+    var resp = await fetch(API_BASE + '/heatmap/data', {
+      headers: { 'X-User-Id': currentUserId || '' }
+    });
+    return await resp.json() || [];
+  } catch(e) {
+    console.error('fetchHeatmapData error:', e);
+    return [];
+  }
+}
+
+async function toggleHeatmap() {
+  var btn = document.getElementById('heatmapToggleBtn');
+  if (!heatmapLayer) {
+    initHeatmap();
+    await new Promise(function(r){ setTimeout(r, 300); });
+  }
+  if (!heatmapLayer) { showToast('😢 热力图插件加载失败'); return; }
+  if (heatmapVisible) {
+    heatmapLayer.hide();
+    heatmapVisible = false;
+    if (btn) btn.classList.remove('heatmap-active');
+    stopHeatmapRefresh();
+    showToast('🔥 热力图已关闭');
+  } else {
+    if (btn) btn.classList.add('heatmap-active');
+    var data = await fetchHeatmapData();
+    heatmapLayer.setDataSet({ data: data, max: 5 });
+    heatmapLayer.show();
+    heatmapVisible = true;
+    startHeatmapRefresh();
+    showToast('🔥 热力图已开启 · ' + data.length + ' 位屎友在线');
+  }
+}
+
+function startHeatmapRefresh() {
+  stopHeatmapRefresh();
+  heatmapRefreshTimer = setInterval(async function() {
+    if (!heatmapVisible || !heatmapLayer) return;
+    var data = await fetchHeatmapData();
+    heatmapLayer.setDataSet({ data: data, max: 5 });
+  }, 30000);
+}
+
+function stopHeatmapRefresh() {
+  if (heatmapRefreshTimer) { clearInterval(heatmapRefreshTimer); heatmapRefreshTimer = null; }
+}
+
+async function setMyStatusWithLocation(status) {
+  var lat = null, lng = null;
+  if (status === 'pooping') {
+    try {
+      var pos = await new Promise(function(resolve, reject) {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: false, timeout: 3000, maximumAge: 30000 });
+        } else { reject(new Error('no geolocation')); }
+      });
+      lat = pos.coords.latitude;
+      lng = pos.coords.longitude;
+    } catch(e) {
+      console.warn('原生定位失败，尝试使用地图缓存坐标:', e.message);
+      if (typeof lastCheckinLocation !== 'undefined' && lastCheckinLocation.lat) {
+        lat = lastCheckinLocation.lat;
+        lng = lastCheckinLocation.lng;
+      } else if (typeof myLocMarker !== 'undefined' && myLocMarker) {
+        var p = myLocMarker.getPosition();
+        lat = p.getLat();
+        lng = p.getLng();
+      }
+    }
+  }
+  try {
+    await fetch(API_BASE + '/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUserId },
+      body: JSON.stringify({ status: status, lat: lat, lng: lng })
+    });
+  } catch(e) { console.error('setMyStatusWithLocation error:', e); }
 }
 
 /* ==========================================================
