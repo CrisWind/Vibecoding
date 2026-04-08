@@ -5,8 +5,14 @@ import unicodedata
 import re
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_from_directory
+from zhipuai import ZhipuAI
 
 app = Flask(__name__)
+
+# ------------------------------------------------------------------ #
+# 智谱 AI 配置（请替换为你自己的 API Key）
+# ------------------------------------------------------------------ #
+ZHIPU_API_KEY = 'YOUR_ZHIPU_API_KEY_HERE'
 
 # ------------------------------------------------------------------ #
 # 数据库路径（PythonAnywhere 部署时请改为绝对路径）
@@ -863,6 +869,125 @@ def friends_active():
     result = [{'friend_id': r['fid'], 'username': normalize_username(r['username']),
                'elapsed_seconds': max(0, int(now - (r['poop_start_time'] or now)))} for r in rows]
     return jsonify({'code': 200, 'data': result}), 200
+
+
+# ================================================================== #
+# v10: 智谱 AI 肠道健康周报
+# ================================================================== #
+
+def aggregate_weekly_data(user_id):
+    """聚合用户过去 7 天的打卡数据，供 AI 周报使用"""
+    conn = get_db()
+    c = conn.cursor()
+    week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+    c.execute('''
+        SELECT record_time, duration_minutes, shape, color, location
+        FROM checkin_logs
+        WHERE user_id = ? AND record_time >= ?
+        ORDER BY record_time DESC
+    ''', (user_id, week_ago))
+    rows = c.fetchall()
+    conn.close()
+
+    if not rows:
+        return None
+
+    total_count = len(rows)
+    total_duration = sum(r['duration_minutes'] for r in rows)
+    avg_duration = round(total_duration / total_count, 1)
+
+    shape_counts = {}
+    color_counts = {}
+    has_extreme_time = False
+
+    for r in rows:
+        shape = r['shape'] or 'unknown'
+        color = r['color'] or 'unknown'
+        shape_counts[shape] = shape_counts.get(shape, 0) + 1
+        color_counts[color] = color_counts.get(color, 0) + 1
+        # 检查极端时间（0:00-5:59）
+        rt = str(r['record_time'] or '')
+        try:
+            if 'T' in rt:
+                hour = int(rt.split('T')[1].split(':')[0])
+            elif ' ' in rt:
+                hour = int(rt.split(' ')[1].split(':')[0])
+            else:
+                hour = -1
+            if 0 <= hour <= 5:
+                has_extreme_time = True
+        except (IndexError, ValueError):
+            pass
+
+    top_shape = max(shape_counts, key=shape_counts.get)
+    top_color = max(color_counts, key=color_counts.get)
+
+    SHAPE_NAMES = {'perfect': '完美', 'soft': '稀软', 'dry': '干燥'}
+    COLOR_NAMES = {
+        '#A0522D': '深褐', '#C4A35A': '金黄', '#6B8E23': '绿色',
+        '#D2691E': '橙褐', '#3B3B3B': '深黑', '#CD5C5C': '偏红'
+    }
+
+    return {
+        'total_count': total_count,
+        'avg_duration': avg_duration,
+        'top_shape': SHAPE_NAMES.get(top_shape, top_shape),
+        'top_shape_count': shape_counts[top_shape],
+        'top_color': COLOR_NAMES.get(top_color.upper(), top_color) if top_color else '未知',
+        'top_color_count': color_counts[top_color],
+        'has_extreme_time': has_extreme_time,
+        'shape_distribution': {SHAPE_NAMES.get(k, k): v for k, v in shape_counts.items()},
+    }
+
+
+@app.route('/api/report/weekly', methods=['GET'])
+def weekly_report():
+    """调用智谱 AI 生成肠道健康周报"""
+    user_id = get_current_user_id()
+    if user_id is None:
+        return jsonify({'code': 401, 'message': '未登录'}), 401
+
+    data = aggregate_weekly_data(user_id)
+    if data is None:
+        return jsonify({'code': 200, 'report': None,
+                        'message': '过去 7 天没有打卡记录，数据不足，无法生成周报 (•́ω•̀)'}), 200
+
+    prompt = f"""你是一位幽默、专业、带点极客风的肠胃科医生，名叫“Dr. Poop”。
+请根据以下用户过去 7 天的排便打卡数据，生成一份 300 字左右的【肠道健康周报】。
+
+📊 数据摘要：
+- 本周总打卡次数：{data['total_count']} 次
+- 平均单次耗时：{data['avg_duration']} 分钟
+- 最常见形态：{data['top_shape']}（出现 {data['top_shape_count']} 次）
+- 最常见颜色：{data['top_color']}（出现 {data['top_color_count']} 次）
+- 形态分布：{data['shape_distribution']}
+- 是否有凌晨打卡：{'是（注意作息！）' if data['has_extreme_time'] else '否'}
+
+请按以下格式输出：
+1. 📋 数据总结（用生动幽默的语言概括数据）
+2. 🏆 健康评级（S/A/B/C 四个等级，S 最佳）
+3. 💡 饮食作息建议（给出 2-3 条实用建议）
+
+要求：语言风格幽默但不低俗，像一个朋友在关心你的健康。可以适当使用 emoji。"""
+
+    try:
+        client = ZhipuAI(api_key=ZHIPU_API_KEY)
+        response = client.chat.completions.create(
+            model='glm-4',
+            messages=[{'role': 'user', 'content': prompt}],
+            temperature=0.8,
+            max_tokens=1024,
+        )
+        report_text = response.choices[0].message.content
+        return jsonify({'code': 200, 'report': report_text}), 200
+    except Exception as e:
+        error_msg = str(e)
+        if 'api_key' in error_msg.lower() or 'auth' in error_msg.lower():
+            return jsonify({'code': 500, 'message': '智谱 AI API Key 无效，请检查配置 🔑'}), 500
+        elif 'timeout' in error_msg.lower():
+            return jsonify({'code': 500, 'message': '智谱 AI 响应超时，请稍后再试 ⏱️'}), 500
+        else:
+            return jsonify({'code': 500, 'message': f'AI 分析失败：{error_msg} 😢'}), 500
 
 
 # ================================================================== #
