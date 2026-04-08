@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>拉了吗 LogIt ♡ Chiikawa Edition</title>
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#FF8FB1">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="chiikawa_happy.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="拉了吗">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -312,6 +314,59 @@ body::-webkit-scrollbar{display:none}
   border-color:#E88FAA;color:#9B2D6B;
   box-shadow:0 4px 20px rgba(232,143,170,.35),0 0 12px 3px rgba(232,143,170,.2);
 }
+
+/* v12: Co-Poop BGM Sync — 肠道交响乐 */
+@keyframes eq-bar{0%,100%{height:4px}50%{height:100%}}
+@keyframes vinyl-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes bgm-pulse{0%,100%{box-shadow:0 0 8px 2px rgba(232,180,184,.2)}50%{box-shadow:0 0 20px 6px rgba(232,180,184,.4)}}
+@keyframes note-fly{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-40px) scale(.5)}}
+.bgm-panel{background:linear-gradient(135deg,rgba(255,222,233,.45),rgba(214,234,248,.35));border:2px solid rgba(232,180,184,.5);border-radius:20px;padding:14px;transition:all .4s;position:relative;overflow:hidden}
+.bgm-panel.active{border-color:#E88FAA;animation:bgm-pulse 2.5s ease-in-out infinite}
+.bgm-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bgm-title{font-size:13px;font-weight:900;color:#5D4037;display:flex;align-items:center;gap:6px}
+.bgm-level{font-size:11px;font-weight:800;padding:3px 10px;border-radius:9999px;white-space:nowrap}
+.bgm-level.solo{background:rgba(168,216,185,.4);color:#2E7D32}
+.bgm-level.duo{background:rgba(135,206,235,.4);color:#1565C0}
+.bgm-level.trio{background:rgba(255,222,233,.6);color:#AD1457}
+.bgm-level.orchestra{background:linear-gradient(135deg,#FFD700,#FFA500);color:#fff}
+.bgm-level.legendary{background:linear-gradient(135deg,#FF6B6B,#FFD700,#4ECDC4);color:#fff;animation:bgm-pulse 1.5s ease-in-out infinite}
+.bgm-eq{display:flex;align-items:flex-end;gap:3px;height:32px;padding:4px 0}
+.bgm-eq-bar{width:4px;border-radius:2px;background:linear-gradient(to top,#E8B4B8,#87CEEB);min-height:4px}
+.bgm-eq.playing .bgm-eq-bar{animation:eq-bar .6s ease-in-out infinite}
+.bgm-eq.playing .bgm-eq-bar:nth-child(1){animation-duration:.5s}
+.bgm-eq.playing .bgm-eq-bar:nth-child(2){animation-delay:.1s;animation-duration:.7s}
+.bgm-eq.playing .bgm-eq-bar:nth-child(3){animation-delay:.05s;animation-duration:.45s}
+.bgm-eq.playing .bgm-eq-bar:nth-child(4){animation-delay:.15s;animation-duration:.55s}
+.bgm-eq.playing .bgm-eq-bar:nth-child(5){animation-delay:.08s;animation-duration:.65s}
+.bgm-eq.playing .bgm-eq-bar:nth-child(6){animation-delay:.12s;animation-duration:.5s}
+.bgm-eq.playing .bgm-eq-bar:nth-child(7){animation-delay:.02s;animation-duration:.6s}
+.bgm-eq.playing .bgm-eq-bar:nth-child(8){animation-delay:.18s;animation-duration:.48s}
+.bgm-vinyl{width:40px;height:40px;border-radius:9999px;background:radial-gradient(circle at center,#5D4037 8px,#3E2723 9px,#5D4037 10px,#4E342E 12px,#3E2723 20px);border:3px solid #8D6E63;position:relative;flex-shrink:0}
+.bgm-vinyl.spinning{animation:vinyl-spin 2s linear infinite}
+.bgm-vinyl-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:9999px;background:#E8B4B8;border:2px solid #fff}
+.bgm-controls{display:flex;align-items:center;gap:10px;margin-top:10px}
+.bgm-btn{width:36px;height:36px;border-radius:9999px;border:2px solid rgba(255,255,255,.7);background:linear-gradient(135deg,rgba(255,222,233,.65),rgba(214,234,248,.35));display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:all .15s;flex-shrink:0}
+.bgm-btn:active{transform:scale(.92);opacity:.85}
+.bgm-btn.muted{background:rgba(141,110,99,.15);opacity:.6}
+.bgm-vol{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:linear-gradient(to right,#E8B4B8,#87CEEB);outline:none;cursor:pointer}
+.bgm-vol::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:9999px;background:#fff;border:3px solid #E8B4B8;box-shadow:0 2px 8px rgba(232,180,184,.3)}
+.bgm-layers{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.bgm-layer-dot{font-size:11px;font-weight:800;padding:2px 8px;border-radius:9999px;transition:all .3s;opacity:.35;border:1.5px solid transparent}
+.bgm-layer-dot.on{opacity:1;border-color:rgba(232,180,184,.5);background:rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(232,180,184,.15)}
+.bgm-note-particle{position:absolute;pointer-events:none;font-size:16px;animation:note-fly 1.5s ease-out forwards}
+
+/* v12+: Co-Poop breathing glow for active friends */
+@keyframes poop-glow{0%,100%{box-shadow:0 0 6px 2px rgba(232,143,170,.25)}50%{box-shadow:0 0 16px 5px rgba(232,143,170,.5)}}
+.co-poop-item.active-pooping{animation:poop-glow 1.8s ease-in-out infinite;border:1.5px solid rgba(232,143,170,.4)}
+
+/* v12+: Confetti particle */
+@keyframes confetti-fall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+.confetti-piece{position:fixed;top:-10px;z-index:99999;width:10px;height:10px;border-radius:2px;pointer-events:none;animation:confetti-fall 2.5s ease-in forwards}
+
+/* v12+: Heatmap privacy tooltip */
+.heatmap-privacy{position:absolute;top:52px;right:160px;z-index:700;width:28px;height:28px;border-radius:9999px;background:rgba(255,251,240,.75);backdrop-filter:blur(8px);border:1.5px solid rgba(255,222,233,.6);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#8D6E63;cursor:pointer}
+.heatmap-privacy-tip{display:none;position:absolute;top:84px;right:12px;z-index:710;max-width:240px;padding:12px 14px;background:rgba(255,251,240,.95);backdrop-filter:blur(8px);border:2px solid rgba(255,222,233,.7);border-radius:16px;box-shadow:0 8px 24px rgba(232,180,184,.2);font-size:11px;font-weight:700;color:#5D4037;line-height:1.5}
+.heatmap-privacy-tip.show{display:block}
 </style>
 </head>
 <body class="min-h-screen select-none">
@@ -334,24 +389,31 @@ body::-webkit-scrollbar{display:none}
   </div>
 </div>
 
-<!-- ✅ Login Overlay -->
+<!-- ✅ v15: Tab切换登录/注册面板 -->
 <div id="loginOverlay" class="login-overlay">
   <div class="login-card">
     <div class="anim-float" style="margin-bottom:16px">
       <img src="chiikawa_happy.png" alt="Chiikawa" style="width:72px;height:72px;border-radius:9999px;object-fit:cover;border:3px solid #FFDEE9;box-shadow:0 6px 20px rgba(232,180,184,.3);margin:0 auto;display:block" onerror="this.style.display='none'">
     </div>
     <div class="login-title">拉了吗 LogIt ♡</div>
-    <div class="login-sub">输入你的昵称，进入专属日记<br><span style="color:#E8B4B8;font-weight:700">首次使用自动注册，下次同名直接进入</span></div>
-    <input
-      type="text"
-      id="loginUsername"
-      class="login-input"
-      placeholder="例如：ruifeng01"
-      maxlength="50"
-      autocomplete="off"
-      onkeydown="if(event.key==='Enter')handleLogin()"
-    >
-    <button class="login-btn" onclick="handleLogin()">🐱 进入我的日记</button>
+    <!-- Tab 切换 -->
+    <div style="display:flex;background:#EBF5FB;border-radius:9999px;padding:3px;gap:3px;border:2px solid #D6EAF8;margin-bottom:20px">
+      <div id="tabLogin" onclick="switchAuthTab('login')" style="flex:1;text-align:center;padding:8px 0;border-radius:9999px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#5B9BD5;box-shadow:0 2px 8px rgba(135,206,235,.2);transition:all .25s">🔓 登录</div>
+      <div id="tabRegister" onclick="switchAuthTab('register')" style="flex:1;text-align:center;padding:8px 0;border-radius:9999px;font-size:13px;font-weight:700;cursor:pointer;color:#8D6E63;transition:all .25s">✨ 注册</div>
+    </div>
+    <!-- 登录表单 -->
+    <div id="formLogin">
+      <input type="text" id="loginUsername" class="login-input" placeholder="用户名 / 昵称" maxlength="50" autocomplete="username" style="margin-bottom:10px">
+      <input type="password" id="loginPassword" class="login-input" placeholder="密码（≥ 6 位）" maxlength="100" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleLogin()">
+      <button class="login-btn" onclick="handleLogin()">🐱 登录进入</button>
+    </div>
+    <!-- 注册表单 -->
+    <div id="formRegister" style="display:none">
+      <input type="text" id="regUsername" class="login-input" placeholder="起一个独一无二的昵称" maxlength="50" autocomplete="username" style="margin-bottom:10px">
+      <input type="password" id="regPassword" class="login-input" placeholder="设置密码（≥ 6 位）" maxlength="100" autocomplete="new-password" style="margin-bottom:10px">
+      <input type="password" id="regPassword2" class="login-input" placeholder="再次确认密码" maxlength="100" autocomplete="new-password" onkeydown="if(event.key==='Enter')handleRegister()">
+      <button class="login-btn" onclick="handleRegister()" style="background:linear-gradient(135deg,#A8D8B9,#7EC8A0)">✨ 注册并进入</button>
+    </div>
     <div class="login-err" id="loginErr"></div>
   </div>
 </div>
@@ -510,6 +572,31 @@ body::-webkit-scrollbar{display:none}
           <div id="coPoopList"></div>
           <div id="coPoopEmpty" class="text-center text-xs font-bold" style="color:#8D6E63;padding:6px 0">暂无好友在线，独享这份宁静 ♡</div>
         </div>
+        <!-- v12: BGM Panel -->
+        <div id="bgmPanel" class="bgm-panel" style="display:none">
+          <div class="bgm-header">
+            <div class="bgm-title">
+              <div class="bgm-vinyl" id="bgmVinyl"><div class="bgm-vinyl-label"></div></div>
+              <span>肠道交响乐</span>
+            </div>
+            <span class="bgm-level solo" id="bgmLevelBadge">🎵 Solo独奏</span>
+          </div>
+          <div class="bgm-eq" id="bgmEq">
+            <div class="bgm-eq-bar"></div><div class="bgm-eq-bar"></div><div class="bgm-eq-bar"></div><div class="bgm-eq-bar"></div>
+            <div class="bgm-eq-bar"></div><div class="bgm-eq-bar"></div><div class="bgm-eq-bar"></div><div class="bgm-eq-bar"></div>
+          </div>
+          <div class="bgm-layers">
+            <span class="bgm-layer-dot on" id="bgmL0">🎹旋律</span>
+            <span class="bgm-layer-dot" id="bgmL1">🎵和声</span>
+            <span class="bgm-layer-dot" id="bgmL2">🎸贝斯</span>
+            <span class="bgm-layer-dot" id="bgmL3">🥁鼓点</span>
+            <span class="bgm-layer-dot" id="bgmL4">✨琶音</span>
+          </div>
+          <div class="bgm-controls">
+            <button class="bgm-btn" id="bgmMuteBtn" onclick="toggleBGMMute()">🔊</button>
+            <input type="range" class="bgm-vol" min="0" max="1" step="0.05" value="0.5" oninput="setBGMVol(this.value)">
+          </div>
+        </div>
         <div id="swResultPanel" class="hidden sw-result-panel space-y-4">
           <div class="loc-pill" id="swLocPill" style="background:rgba(214,234,248,.55);border-color:rgba(135,206,235,.35)">
             <div class="loc-left">
@@ -570,6 +657,8 @@ body::-webkit-scrollbar{display:none}
     </div>
     <div id="map"></div>
     <button id="heatmapToggleBtn" class="heatmap-toggle-btn" onclick="toggleHeatmap()">🔥 附近屎友热力图</button>
+    <button class="heatmap-privacy" onclick="var t=document.getElementById('heatmapPrivacyTip');t.classList.toggle('show')" title="隐私说明">ℹ️</button>
+    <div id="heatmapPrivacyTip" class="heatmap-privacy-tip">🔒 <b>隐私保护说明</b><br>热力图数据已经进行<b>匿名脱敏</b>处理：坐标随机偏移约 500 米，无法追溯精确位置。您的位置隐私安全无忧 ♡</div>
   </div>
 
   <!-- VIEW: Calendar -->
@@ -621,7 +710,7 @@ body::-webkit-scrollbar{display:none}
           <div class="text-[11px] font-bold" style="color:#8D6E63">导入/导出本机数据</div>
         </div>
         <div class="mt-4 grid grid-cols-2 gap-3">
-          <button onclick="exportData()" class="w-full py-2.5 rounded-full text-white font-extrabold text-sm shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#A8D8B9,#7EC8A0)">⬇️ 导出备份</button>
+          <button onclick="exportCSV()" class="w-full py-2.5 rounded-full text-white font-extrabold text-sm shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#A8D8B9,#7EC8A0)">⬇️ 导出 CSV</button>
           <button onclick="document.getElementById('importFileInput').click()" class="w-full py-2.5 rounded-full text-white font-extrabold text-sm shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#F5B97A,#F0A24A)">⬆️ 恢复数据</button>
         </div>
         <input id="importFileInput" type="file" accept=".json" style="display:none" onchange="importData(event)">
@@ -744,6 +833,26 @@ body::-webkit-scrollbar{display:none}
 /* ==========================================================
  * Constants & State
  * ========================================================== */
+/* v14: HTTPS 现在由服务端 301 强制跳转，前端保留一层兼容 */
+if(location.protocol==='http:'&&location.hostname!=='localhost'&&location.hostname!=='127.0.0.1'){location.replace('https://'+location.host+location.pathname+location.search)}
+
+/* v14: 页面可见性管理 — 隐藏时暂停BGM+动画，显示时恢复 */
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden){
+    if(typeof bgmCtx!=='undefined'&&bgmCtx&&bgmCtx.state==='running') bgmCtx.suspend();
+  } else {
+    if(typeof bgmCtx!=='undefined'&&bgmCtx&&bgmCtx.state==='suspended'&&typeof bgmPlaying!=='undefined'&&bgmPlaying) bgmCtx.resume();
+  }
+});
+/* v12+: Service Worker 注册 */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(function(reg){ console.log('SW registered:', reg.scope); })
+      .catch(function(err){ console.warn('SW register failed:', err); });
+  });
+}
+
 var API_BASE = 'https://rflogit.pythonanywhere.com/api';
 var currentUserId = null;
 var currentUsername = '';
@@ -771,45 +880,94 @@ function hideLoginOverlay() {
   document.getElementById('headerUsername').textContent = '👋 ' + currentUsername;
 }
 
+/* v15: Tab 切换登录/注册 */
+var authTab = 'login';
+function switchAuthTab(tab) {
+  authTab = tab;
+  document.getElementById('loginErr').textContent = '';
+  var tl = document.getElementById('tabLogin');
+  var tr = document.getElementById('tabRegister');
+  var fl = document.getElementById('formLogin');
+  var fr = document.getElementById('formRegister');
+  if (tab === 'login') {
+    tl.style.background='#fff'; tl.style.color='#5B9BD5'; tl.style.boxShadow='0 2px 8px rgba(135,206,235,.2)';
+    tr.style.background='transparent'; tr.style.color='#8D6E63'; tr.style.boxShadow='none';
+    fl.style.display='block'; fr.style.display='none';
+  } else {
+    tr.style.background='#fff'; tr.style.color='#5B9BD5'; tr.style.boxShadow='0 2px 8px rgba(135,206,235,.2)';
+    tl.style.background='transparent'; tl.style.color='#8D6E63'; tl.style.boxShadow='none';
+    fl.style.display='none'; fr.style.display='block';
+  }
+}
+
 async function handleLogin() {
-  var usernameEl = document.getElementById('loginUsername');
   var errEl = document.getElementById('loginErr');
   errEl.textContent = '';
-
-  var username = usernameEl.value.trim();
-  if (!username) {
-    errEl.textContent = '昵称不能为空哦 (•́ω•̀)';
-    return;
-  }
-  if (username.length > 50) {
-    errEl.textContent = '昵称最多 50 个字符';
-    return;
-  }
-
+  var username = (document.getElementById('loginUsername').value || '').trim();
+  var password = document.getElementById('loginPassword').value || '';
+  if (!username) { errEl.textContent = '请输入用户名 (•́ω•̀)'; return; }
+  if (!password) { errEl.textContent = '请输入密码'; return; }
+  if (password.length < 6) { errEl.textContent = '密码至少 6 位哦'; return; }
   try {
     var resp = await fetch(API_BASE + '/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: username })
+      body: JSON.stringify({ username: username, password: password })
     });
-
     var json = await resp.json();
-
     if (json.code === 200) {
       currentUserId = String(json.user_id);
-      currentUsername = json.username;
+      currentUsername = json.username || username;
       localStorage.setItem('logit_user_id', currentUserId);
       localStorage.setItem('logit_username', currentUsername);
       hideLoginOverlay();
+      showToast(json.message || '✅ 登录成功 ♡');
       await fetchRecords();
       refreshCharts();
       if (calendarInited) renderCalendar(calCursor.getFullYear(), calCursor.getMonth());
+    } else if (json.need_set_password) {
+      errEl.textContent = json.message || '请设置新密码完成升级';
     } else {
-      errEl.textContent = json.message || '登录失败，请稍后再试';
+      errEl.textContent = json.message || '登录失败';
     }
   } catch(e) {
     console.error('handleLogin error:', e);
-    errEl.textContent = '网络连接失败，请检查网络或服务器 (；；)';
+    errEl.textContent = '网络连接失败，请检查网络 (；；)';
+  }
+}
+
+async function handleRegister() {
+  var errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+  var username = (document.getElementById('regUsername').value || '').trim();
+  var pw1 = document.getElementById('regPassword').value || '';
+  var pw2 = document.getElementById('regPassword2').value || '';
+  if (!username) { errEl.textContent = '请输入用户名'; return; }
+  if (username.length > 50) { errEl.textContent = '用户名最多 50 字符'; return; }
+  if (!pw1 || pw1.length < 6) { errEl.textContent = '密码至少 6 位哦'; return; }
+  if (pw1 !== pw2) { errEl.textContent = '两次密码不一致，请重新输入'; return; }
+  try {
+    var resp = await fetch(API_BASE + '/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username, password: pw1 })
+    });
+    var json = await resp.json();
+    if (json.code === 200) {
+      currentUserId = String(json.user_id);
+      currentUsername = json.username || username;
+      localStorage.setItem('logit_user_id', currentUserId);
+      localStorage.setItem('logit_username', currentUsername);
+      hideLoginOverlay();
+      showToast('✨ 注册成功，欢迎加入 ♡');
+      await fetchRecords();
+      refreshCharts();
+    } else {
+      errEl.textContent = json.message || '注册失败';
+    }
+  } catch(e) {
+    console.error('handleRegister error:', e);
+    errEl.textContent = '网络连接失败 (；；)';
   }
 }
 
@@ -817,6 +975,7 @@ function handleLogout() {
   if (!confirm('确定要退出登录吗？')) return;
   setMyStatus('idle');
   stopCoPoopPolling();
+  stopBGM();
   currentUserId = null;
   currentUsername = '';
   cachedRecords = [];
@@ -914,7 +1073,7 @@ function switchView(view, tabEl) {
   if (view === 'map') { initMap(); }
   if (view === 'health') { generateHealthReport(); }
   if (view === 'calendar') { initCalendar(); }
-  if (view === 'checkin') { warmupCheckinLocation(); }
+  if (view === 'checkin') { warmupCheckinLocation(); fillDefaultDatetime(); }
   if (view === 'friends') { loadFriendsView(); }
   if (view === 'badges') { loadBadges(); }
 }
@@ -940,8 +1099,17 @@ function setCheckinLocationText(text, opts) {
   if (t2) { if (opts.loading) t2.innerHTML = showText; else t2.textContent = showText; }
 }
 
+/* v14: 定位懒加载 — 不再首屏自动请求，显示“点击获取” */
+var locRequested = false;
 function warmupCheckinLocation() {
   if (manualOverrideLocation) { setCheckinLocationText(manualOverrideLocation); return; }
+  if (lastCheckinLocation.text && lastCheckinLocation.text !== '未知位置' && (Date.now() - lastCheckinLocation.ts < LOC_TTL_MS)) {
+    setCheckinLocationText(lastCheckinLocation.text); return;
+  }
+  if (!locRequested) {
+    setCheckinLocationText('点击“刷新”按钮获取位置');
+    return;
+  }
   setCheckinLocationText('正在获取位置...');
   fetchCheckinLocation(false, function(){ });
 }
@@ -950,13 +1118,28 @@ function retryLocation(e) {
   if (e && e.preventDefault) e.preventDefault();
   if (e && e.stopPropagation) e.stopPropagation();
   manualOverrideLocation = '';
+  locRequested = true;
   if (locLoading) return;
   locLoading = true;
   setCheckinLocationText('', { loading: true });
   fetchCheckinLocation(true, function(addr){
     locLoading = false;
-    setCheckinLocationText(addr || '未知位置');
+    if (!addr || addr === '未知位置') {
+      showLocFailureFallback();
+    } else {
+      setCheckinLocationText(addr);
+    }
   });
+}
+
+/* v14: 定位失败自动兜底 — 显示明确原因 + 手动选点按钮 */
+function showLocFailureFallback() {
+  var t1 = document.getElementById('manualLocationText');
+  var t2 = document.getElementById('swLocationText');
+  var html = '⚠️ 定位失败 <span onclick="editLocation(event)" style="color:#5B9BD5;text-decoration:underline;cursor:pointer;margin-left:4px">手动选点</span> <span onclick="retryLocation(event)" style="color:#E88FAA;text-decoration:underline;cursor:pointer;margin-left:4px">重试</span>';
+  if (t1) t1.innerHTML = html;
+  if (t2) t2.innerHTML = html;
+  showToast('📍 定位失败，可能是浏览器未授权或网络问题，请手动选点或重试');
 }
 
 function editLocation(e) {
@@ -1012,7 +1195,7 @@ function fetchCheckinLocation(force, cb) {
         console.warn('浏览器原生定位失败:', err.message);
         tryAMapGeolocation(cb);
       },
-      { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
     );
   } else {
     tryAMapGeolocation(cb);
@@ -1048,8 +1231,8 @@ function tryAMapGeolocation(cb) {
     if (!geoInstance) {
       geoInstance = new AMap.Geolocation({
         enableHighAccuracy: false,
-        timeout: 5000,
-        maximumAge: 30000,
+        timeout: 15000,
+        maximumAge: 300000,
         convert: true,
         showButton: false,
         showMarker: false,
@@ -1064,7 +1247,7 @@ function tryAMapGeolocation(cb) {
           addr = (ac.province||'') + (ac.city||'') + (ac.district||'') + (ac.township||'');
         }
         addr = addr || '未知位置';
-        lastCheckinLocation = { text: addr, ts: Date.now(), lat: result.position.lat, lng: result.position.lng };
+        lastCheckinLocation = { text: addr, ts: Date.now(), lat: result.position ? result.position.lat : null, lng: result.position ? result.position.lng : null };
         if (!manualOverrideLocation) setCheckinLocationText(addr);
         cb && cb(manualOverrideLocation || addr);
       } else {
@@ -1083,7 +1266,13 @@ function tryIPFallback(cb) {
     citySearch.getLocalCity(function(status, result) {
       if (status === 'complete' && result && result.city) {
         var addr = (result.province || '') + result.city + '（IP定位）';
-        lastCheckinLocation = { text: addr, ts: Date.now(), lat: c.lat, lng: c.lng };
+        var c_lat = null, c_lng = null;
+        if (result.bounds) {
+          var center = result.bounds.getCenter();
+          c_lat = center.lat;
+          c_lng = center.lng;
+        }
+        lastCheckinLocation = { text: addr, ts: Date.now(), lat: c_lat, lng: c_lng };
         if (!manualOverrideLocation) setCheckinLocationText(addr);
         cb && cb(manualOverrideLocation || addr);
       } else {
@@ -1382,6 +1571,7 @@ function startStopwatch() {
   warmupCheckinLocation();
   setMyStatusWithLocation('pooping');
   startCoPoopPolling();
+  startBGM();
   swInterval = setInterval(function() {
     swElapsed = Math.floor((Date.now() - swStartTime) / 1000);
     var m = String(Math.floor(swElapsed / 60)).padStart(2, '0');
@@ -1397,6 +1587,7 @@ function stopStopwatch() {
   swInterval = null;
   setMyStatus('idle');
   stopCoPoopPolling();
+  stopBGM();
   swEndDate = new Date();
   var durMin = Math.max(1, Math.round(swElapsed / 60));
   var btn = document.getElementById('swBtn');
@@ -1421,6 +1612,7 @@ function stopStopwatch() {
 async function saveStopwatchRecord() {
   setMyStatus('idle');
   stopCoPoopPolling();
+  stopBGM();
   var panel = document.getElementById('swResultPanel');
   var dur = parseInt(panel.dataset.duration);
   var endTime = parseInt(panel.dataset.endTime);
@@ -1465,6 +1657,7 @@ async function saveStopwatchRecord() {
 function resetStopwatch() {
   setMyStatus('idle');
   stopCoPoopPolling();
+  stopBGM();
   document.getElementById('swResultPanel').classList.add('hidden');
   showToast('🗑️ 已放弃本次记录');
 }
@@ -1580,7 +1773,7 @@ function locateUserByAMap() {
         hideMapLoading(loading);
       },
       function() { mapAMapFallback(loading); },
-      { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
     );
   } else {
     mapAMapFallback(loading);
@@ -1590,7 +1783,7 @@ function mapAMapFallback(loading) {
   try {
     if (!geoInstance) {
       geoInstance = new AMap.Geolocation({
-        enableHighAccuracy: false, timeout: 5000, maximumAge: 30000, convert: true,
+        enableHighAccuracy: false, timeout: 15000, maximumAge: 300000, convert: true,
         showButton: false, showMarker: false, showCircle: false, panToLocation: false, zoomToAccuracy: false
       });
     }
@@ -1914,6 +2107,85 @@ function importData(event) {
   try { if (event && event.target) event.target.value = ''; } catch(e) {}
 }
 
+/* v12+: CSV 导出（调用后端 API） */
+function exportCSV(){
+  if(!currentUserId){showToast('请先登录');return}
+  var url=API_BASE+'/export/csv';
+  var a=document.createElement('a');
+  // 用 fetch + blob 携带 header
+  fetch(url,{headers:{'X-User-Id':currentUserId}}).then(function(r){
+    if(!r.ok)throw new Error('export failed');
+    return r.blob();
+  }).then(function(blob){
+    var u=URL.createObjectURL(blob);
+    a.href=u;a.download='LogIt_'+currentUsername+'.csv';a.click();
+    setTimeout(function(){URL.revokeObjectURL(u)},500);
+    showToast('⬇️ CSV 已导出，可用 Excel 打开');
+  }).catch(function(e){showToast('导出失败：'+e.message)});
+}
+
+/* v12+: 五彩纸屑特效 Confetti */
+function fireConfetti(){
+  var colors=['#FFDEE9','#D6EAF8','#FCF3CF','#E8B4B8','#A8D8B9','#FFD700','#FF6B6B','#87CEEB','#F0B4CC'];
+  for(var i=0;i<60;i++){
+    var p=document.createElement('div');
+    p.className='confetti-piece';
+    p.style.left=Math.random()*100+'vw';
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    p.style.width=(6+Math.random()*8)+'px';
+    p.style.height=(6+Math.random()*8)+'px';
+    p.style.borderRadius=Math.random()>0.5?'50%':'2px';
+    p.style.animationDuration=(1.5+Math.random()*2)+'s';
+    p.style.animationDelay=(Math.random()*0.8)+'s';
+    document.body.appendChild(p);
+    setTimeout(function(el){return function(){try{document.body.removeChild(el)}catch(x){}}}(p),4000);
+  }
+}
+
+/* ==========================================================
+ * v12: Co-Poop BGM Sync — 肠道交响乐 🎵
+ * Web Audio API procedural chiptune engine
+ * Dynamic layers: Solo → Duo → Trio → Orchestra → LEGENDARY
+ * ========================================================== */
+var bgmCtx=null,bgmMaster=null,bgmPlaying=false,bgmMuted=false,bgmVol=0.5;
+var bgmLevel=0,bgmSchId=null,bgmBPM=120,bgmBeat=0,bgmNextT=0,bgmParticleTimer=null;
+var NF={};(function(){var n=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];for(var o=0;o<8;o++)for(var i=0;i<12;i++)NF[n[i]+o]=440*Math.pow(2,(o*12+i+12-69)/12)})();
+var BGM_MEL=['C4','E4','G4','A4','G4','E4','C5','A4','G4','E4','D4','E4','G4','A4','C5','A4'];
+var BGM_HAR=['E4','G4','C5','C5','C5','G4','E5','C5','C5','G4','F4','G4','C5','C5','E5','C5'];
+var BGM_BAS=['C2','C2','G2','G2','A2','A2','E2','E2','F2','F2','C2','C2','G2','G2','C3','C2'];
+var BGM_ARP=['C5','E5','G5','C6','G5','E5','C5','E5','A4','C5','E5','A5','E5','C5','A4','C5'];
+var BGM_DRM=['K','_','H','_','S','_','H','K','K','_','H','_','S','_','H','H'];
+
+function initBGM(){if(bgmCtx)return;try{bgmCtx=new(window.AudioContext||window.webkitAudioContext)();bgmMaster=bgmCtx.createGain();bgmMaster.gain.value=bgmVol;bgmMaster.connect(bgmCtx.destination)}catch(e){bgmCtx=null}}
+function startBGM(){initBGM();if(!bgmCtx)return;if(bgmCtx.state==='suspended')bgmCtx.resume();bgmPlaying=true;bgmBeat=0;bgmNextT=bgmCtx.currentTime+0.1;bgmLevel=0;if(bgmMaster)bgmMaster.gain.value=bgmMuted?0:bgmVol;updateBGMPanel();scheduleBGM();bgmParticleTimer=setInterval(function(){if(bgmPlaying&&!bgmMuted)spawnBGMNote()},800)}
+function stopBGM(){bgmPlaying=false;if(bgmSchId){clearTimeout(bgmSchId);bgmSchId=null}if(bgmParticleTimer){clearInterval(bgmParticleTimer);bgmParticleTimer=null}if(bgmMaster&&bgmCtx){try{bgmMaster.gain.setTargetAtTime(0,bgmCtx.currentTime,0.3)}catch(e){}}setTimeout(function(){if(bgmMaster&&bgmCtx)try{bgmMaster.gain.value=bgmVol}catch(e){}},1500);updateBGMPanel()}
+function scheduleBGM(){if(!bgmPlaying||!bgmCtx)return;while(bgmNextT<bgmCtx.currentTime+0.1){playBGMBeat(bgmBeat,bgmNextT);bgmNextT+=60/bgmBPM/2;bgmBeat=(bgmBeat+1)%16}bgmSchId=setTimeout(scheduleBGM,25)}
+
+function mkOsc(type,freq,t,dur,vol){if(!bgmCtx||!NF[freq])return null;var o=bgmCtx.createOscillator(),g=bgmCtx.createGain();o.type=type;o.frequency.value=NF[freq];g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+dur);o.connect(g);g.connect(bgmMaster);o.start(t);o.stop(t+dur+0.02);return o}
+function mkNoise(t,dur,vol,hpf){var sz=bgmCtx.sampleRate*dur,buf=bgmCtx.createBuffer(1,sz,bgmCtx.sampleRate),d=buf.getChannelData(0);for(var i=0;i<sz;i++)d[i]=Math.random()*2-1;var n=bgmCtx.createBufferSource();n.buffer=buf;var g=bgmCtx.createGain(),f=bgmCtx.createBiquadFilter();f.type='highpass';f.frequency.value=hpf;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);n.connect(f);f.connect(g);g.connect(bgmMaster);n.start(t);n.stop(t+dur+0.01)}
+
+function playBGMBeat(beat,t){
+  if(bgmMuted)return;
+  // Layer 0: Melody (square + vibrato)
+  var mo=mkOsc('square',BGM_MEL[beat],t,0.12,0.13);if(mo){var lfo=bgmCtx.createOscillator(),lg=bgmCtx.createGain();lfo.frequency.value=5;lg.gain.value=2;lfo.connect(lg);lg.connect(mo.frequency);lfo.start(t);lfo.stop(t+0.12)}
+  // Layer 1: Harmony (triangle)
+  if(bgmLevel>=1)mkOsc('triangle',BGM_HAR[beat],t,0.1,0.07);
+  // Layer 2: Bass (sawtooth + lowpass)
+  if(bgmLevel>=2&&beat%2===0){var bo=bgmCtx.createOscillator(),bg=bgmCtx.createGain(),bf=bgmCtx.createBiquadFilter();bo.type='sawtooth';bo.frequency.value=NF[BGM_BAS[beat]]||65;bf.type='lowpass';bf.frequency.value=400;bf.Q.value=2;bg.gain.setValueAtTime(0,t);bg.gain.linearRampToValueAtTime(0.1,t+0.02);bg.gain.exponentialRampToValueAtTime(0.001,t+0.2);bo.connect(bf);bf.connect(bg);bg.connect(bgmMaster);bo.start(t);bo.stop(t+0.22)}
+  // Layer 3: Drums (noise percussion)
+  if(bgmLevel>=3){var dr=BGM_DRM[beat];if(dr==='K'){var ko=bgmCtx.createOscillator(),kg=bgmCtx.createGain();ko.frequency.setValueAtTime(150,t);ko.frequency.exponentialRampToValueAtTime(30,t+0.12);kg.gain.setValueAtTime(0.2,t);kg.gain.exponentialRampToValueAtTime(0.001,t+0.15);ko.connect(kg);kg.connect(bgmMaster);ko.start(t);ko.stop(t+0.16)}else if(dr==='S')mkNoise(t,0.1,0.12,1000);else if(dr==='H')mkNoise(t,0.04,0.05,6000)}
+  // Layer 4: Sparkle arp
+  if(bgmLevel>=4)mkOsc('square',BGM_ARP[beat],t,0.06,0.04);
+}
+
+function updateBGMLevel(fc){var nl=fc>=4?4:fc>=3?3:fc>=2?2:fc>=1?1:0;if(nl!==bgmLevel){var ol=bgmLevel;bgmLevel=nl;bgmBPM=120+nl*8;updateBGMPanel();if(nl>ol&&bgmPlaying){var msgs={1:'🎵 Duo双重奏！好友和声加入 ♡',2:'🎶 Trio三重奏！贝斯上线 ♡',3:'🥁 Orchestra！鼓点炸裂 ♡',4:'🌟 LEGENDARY！全员史诗级BGM ♡'};showToast(msgs[nl]||'🎵 音乐进化！');for(var i=0;i<6;i++)setTimeout(spawnBGMNote,i*150)}}}
+
+function updateBGMPanel(){var p=document.getElementById('bgmPanel'),eq=document.getElementById('bgmEq'),vn=document.getElementById('bgmVinyl'),lb=document.getElementById('bgmLevelBadge'),mb=document.getElementById('bgmMuteBtn');if(!p)return;p.style.display=bgmPlaying?'block':'none';p.classList.toggle('active',bgmPlaying);if(eq)eq.classList.toggle('playing',bgmPlaying&&!bgmMuted);if(vn)vn.classList.toggle('spinning',bgmPlaying&&!bgmMuted);var info=[{n:'🎵 Solo独奏',c:'solo'},{n:'🎶 Duo双重奏',c:'duo'},{n:'🎻 Trio三重奏',c:'trio'},{n:'🥁 Orchestra',c:'orchestra'},{n:'🌟 LEGENDARY',c:'legendary'}][bgmLevel];if(lb){lb.textContent=info.n;lb.className='bgm-level '+info.c}if(mb){mb.textContent=bgmMuted?'🔇':'🔊';mb.classList.toggle('muted',bgmMuted)}for(var i=0;i<5;i++){var d=document.getElementById('bgmL'+i);if(d)d.classList.toggle('on',i<=bgmLevel)}}
+
+function toggleBGMMute(){bgmMuted=!bgmMuted;if(bgmMaster&&bgmCtx)bgmMaster.gain.setTargetAtTime(bgmMuted?0:bgmVol,bgmCtx.currentTime,0.05);updateBGMPanel();showToast(bgmMuted?'🔇 BGM已静音':'🔊 BGM已开启')}
+function setBGMVol(v){bgmVol=parseFloat(v);if(bgmMaster&&!bgmMuted&&bgmCtx)bgmMaster.gain.setTargetAtTime(bgmVol,bgmCtx.currentTime,0.05)}
+function spawnBGMNote(){var p=document.getElementById('bgmPanel');if(!p)return;var ns=['♪','♫','♬','🎵','🎶','💫','✨'];var e=document.createElement('span');e.className='bgm-note-particle';e.textContent=ns[Math.floor(Math.random()*ns.length)];e.style.left=(10+Math.random()*80)+'%';e.style.top=(10+Math.random()*50)+'%';p.appendChild(e);setTimeout(function(){try{p.removeChild(e)}catch(x){}},1500)}
+
 /* ==========================================================
  * Co-Poop Polling (v7)
  * ========================================================== */
@@ -1957,6 +2229,7 @@ async function fetchActiveFriends() {
       coPoopFriendsCache = json.data || [];
       coPoopLastPollTime = Date.now();
       renderCoPoopLobby();
+      if(bgmPlaying) updateBGMLevel(coPoopFriendsCache.length);
     }
   } catch(e) { console.warn('fetchActiveFriends:', e); }
 }
