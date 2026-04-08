@@ -4,11 +4,39 @@ import time
 import unicodedata
 import re
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, redirect
+from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
 from zhipuai import ZhipuAI
 import random
 
 app = Flask(__name__)
+
+
+# ================================================================== #
+# v14: 服务端 HTTPS 强制重定向 + 安全头
+# ================================================================== #
+
+# v15: 删除了 force_https()——PythonAnywhere 已在反代层强制 HTTPS，
+# Flask 层再做 301 会导致 ERR_TOO_MANY_REDIRECTS 死循环。
+# 如果你使用自己的服务器（非 PythonAnywhere），可以取消下面的注释。
+# @app.before_request
+# def force_https():
+#     if request.headers.get('X-Forwarded-Proto', 'http') != 'https' \
+#             and not request.host.startswith('127.0.0.1') \
+#             and not request.host.startswith('localhost'):
+#         url = request.url.replace('http://', 'https://', 1)
+#         return redirect(url, code=301)
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    return response
+
 
 # ------------------------------------------------------------------ #
 # 智谱 AI 配置（请替换为你自己的 API Key）
@@ -20,11 +48,14 @@ ZHIPU_API_KEY = 'YOUR_ZHIPU_API_KEY_HERE'
 # 例如：DB_PATH = '/home/rflogit/mysite/logit.db'
 # ------------------------------------------------------------------ #
 DB_PATH = os.path.join(os.path.dirname(__file__), 'logit.db')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
+    conn.execute('PRAGMA journal_mode=WAL')
+    conn.execute('PRAGMA busy_timeout=5000')
     return conn
 
 
@@ -199,6 +230,8 @@ def init_db():
         'ALTER TABLE users ADD COLUMN poop_start_time REAL DEFAULT NULL',
         'ALTER TABLE users ADD COLUMN lat REAL DEFAULT NULL',
         'ALTER TABLE users ADD COLUMN lng REAL DEFAULT NULL',
+        "ALTER TABLE users ADD COLUMN device_token TEXT DEFAULT NULL",
+        "ALTER TABLE users ADD COLUMN password_hash TEXT DEFAULT NULL",
     ]:
         try:
             c.execute(sql)
@@ -475,54 +508,131 @@ def check_social_badges_on_friend_accept(user_id):
 
 
 # ================================================================== #
-# 静态文件服务
+# v13: PWA 静态文件服务（manifest / sw / icons）
 # ================================================================== #
+
+@app.route('/manifest.json')
+def serve_manifest():
+    resp = send_from_directory(BASE_DIR, 'manifest.json', mimetype='application/manifest+json')
+    resp.headers['Cache-Control'] = 'public, max-age=300'
+    return resp
+
+
+@app.route('/sw.js')
+def serve_sw():
+    resp = send_from_directory(BASE_DIR, 'sw.js', mimetype='application/javascript')
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    resp.headers['Service-Worker-Allowed'] = '/'
+    return resp
+
+
+@app.route('/icons/<path:filename>')
+def serve_icons(filename):
+    return send_from_directory(os.path.join(BASE_DIR, 'icons'), filename)
+
 
 @app.route('/')
 def serve_index():
-    return send_from_directory(os.path.dirname(__file__), 'index.html')
+    return send_from_directory(BASE_DIR, 'index.html')
 
 
 @app.route('/<path:filename>')
 def serve_static(filename):
-    return send_from_directory(os.path.dirname(__file__), filename)
+    return send_from_directory(BASE_DIR, filename)
 
 
 # ================================================================== #
-# 认证接口
+# v15: 密码哈希认证接口
 # ================================================================== #
 
-@app.route('/api/login', methods=['POST'])
-def api_login():
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    """v15: 新用户注册（用户名 + 密码哈希）"""
     data = request.get_json(silent=True) or {}
     username = normalize_username(str(data.get('username', '')))
+    password = str(data.get('password', ''))
     if not username:
-        return jsonify({'code': 400, 'message': '昵称不能为空'}), 400
+        return jsonify({'code': 400, 'message': '用户名不能为空'}), 400
     if len(username) > 50:
-        return jsonify({'code': 400, 'message': '昵称最多 50 个字符'}), 400
+        return jsonify({'code': 400, 'message': '用户名最多 50 个字符'}), 400
+    if not password or len(password) < 6:
+        return jsonify({'code': 400, 'message': '密码不能为空且至少 6 位'}), 400
 
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT id, username FROM users WHERE TRIM(username) = ? COLLATE NOCASE', (username,))
-    row = c.fetchone()
-    if not row:
-        c.execute('SELECT id, username FROM users')
-        for u in c.fetchall():
-            if normalize_username(u['username']) == username:
-                row = u
-                break
-    if row:
-        c.execute('UPDATE users SET username = ? WHERE id = ?', (username, row['id']))
-        conn.commit()
+    c.execute('SELECT id FROM users WHERE TRIM(username) = ? COLLATE NOCASE', (username,))
+    if c.fetchone():
         conn.close()
-        return jsonify({'code': 200, 'user_id': row['id'], 'username': username}), 200
+        return jsonify({'code': 409, 'message': '该用户名已被注册，请换一个或直接登录 ♮'}), 409
 
+    pw_hash = generate_password_hash(password)
     now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    c.execute('INSERT INTO users (username, created_at) VALUES (?, ?)', (username, now_str))
+    c.execute('INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)',
+              (username, pw_hash, now_str))
     conn.commit()
     user_id = c.lastrowid
     conn.close()
     return jsonify({'code': 200, 'user_id': user_id, 'username': username}), 200
+
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """v15: 密码验证登录（兼容无密码老用户）"""
+    data = request.get_json(silent=True) or {}
+    username = normalize_username(str(data.get('username', '')))
+    password = str(data.get('password', ''))
+    if not username:
+        return jsonify({'code': 400, 'message': '用户名不能为空'}), 400
+
+    conn = get_db()
+    c = conn.cursor()
+    # 查找用户（大小写不敏感 + 归一化 fallback）
+    c.execute('SELECT id, username, password_hash FROM users WHERE TRIM(username) = ? COLLATE NOCASE', (username,))
+    row = c.fetchone()
+    if not row:
+        c.execute('SELECT id, username, password_hash FROM users')
+        for u in c.fetchall():
+            if normalize_username(u['username']) == username:
+                row = u
+                break
+    if not row:
+        conn.close()
+        return jsonify({'code': 401, 'message': '用户不存在，请先注册 ♮'}), 401
+
+    # 取出存储的 hash（兼容无密码老用户）
+    stored_hash = None
+    try:
+        stored_hash = row['password_hash']
+    except (IndexError, KeyError):
+        stored_hash = None
+
+    if not stored_hash:
+        # 老用户没有密码 —— 如果前端传了密码，帮他设置；如果没传，返回特殊状态让前端引导设置密码
+        if password and len(password) >= 6:
+            pw_hash = generate_password_hash(password)
+            c.execute('UPDATE users SET password_hash = ?, username = ? WHERE id = ?',
+                      (pw_hash, username, row['id']))
+            conn.commit()
+            conn.close()
+            return jsonify({'code': 200, 'user_id': row['id'], 'username': username,
+                            'message': '密码已设置成功，欢迎回来 ♡'}), 200
+        else:
+            conn.close()
+            return jsonify({'code': 426, 'message': '该账号是旧版免密用户，请输入新密码（≥ 6 位）完成升级',
+                            'need_set_password': True, 'user_id': row['id']}), 200
+
+    # 正常密码验证
+    if not password:
+        conn.close()
+        return jsonify({'code': 401, 'message': '请输入密码'}), 401
+    if not check_password_hash(stored_hash, password):
+        conn.close()
+        return jsonify({'code': 401, 'message': '密码错误，请重试 (>́ω<́)'}), 401
+
+    c.execute('UPDATE users SET username = ? WHERE id = ?', (username, row['id']))
+    conn.commit()
+    conn.close()
+    return jsonify({'code': 200, 'user_id': row['id'], 'username': username}), 200
 
 
 # ================================================================== #
@@ -980,6 +1090,11 @@ def weekly_report():
 
 要求：语言风格幽默但不低俗，像一个朋友在关心你的健康。可以适当使用 emoji。"""
 
+    import signal
+
+    def _timeout_handler(signum, frame):
+        raise TimeoutError('智谱 AI 响应超时')
+
     try:
         client = ZhipuAI(api_key=ZHIPU_API_KEY)
         response = client.chat.completions.create(
@@ -987,17 +1102,24 @@ def weekly_report():
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.8,
             max_tokens=1024,
+            timeout=25,
         )
         report_text = response.choices[0].message.content
         return jsonify({'code': 200, 'report': report_text}), 200
+    except TimeoutError:
+        return jsonify({'code': 200, 'report': None,
+                        'message': '😴 AI 医生正在休息，服务器响应超时，请稍后再试 ♡'}), 200
     except Exception as e:
         error_msg = str(e)
         if 'api_key' in error_msg.lower() or 'auth' in error_msg.lower():
-            return jsonify({'code': 500, 'message': '智谱 AI API Key 无效，请检查配置 🔑'}), 500
-        elif 'timeout' in error_msg.lower():
-            return jsonify({'code': 500, 'message': '智谱 AI 响应超时，请稍后再试 ⏱️'}), 500
+            return jsonify({'code': 200, 'report': None,
+                            'message': '🔑 智谱 AI API Key 无效，请检查配置'}), 200
+        elif 'timeout' in error_msg.lower() or 'timed out' in error_msg.lower():
+            return jsonify({'code': 200, 'report': None,
+                            'message': '😴 AI 医生正在休息，网络超时了，请稍后再试 ♡'}), 200
         else:
-            return jsonify({'code': 500, 'message': f'AI 分析失败：{error_msg} 😢'}), 500
+            return jsonify({'code': 200, 'report': None,
+                            'message': f'😢 AI 分析出了点小问题，请稍后再试（{error_msg[:80]}）'}), 200
 
 
 # ================================================================== #
@@ -1032,6 +1154,49 @@ def heatmap_data():
         })
 
     return jsonify(result), 200
+
+
+# ================================================================== #
+# v12: CSV 数据导出接口
+# ================================================================== #
+
+@app.route('/api/export/csv', methods=['GET'])
+def export_csv():
+    """导出用户打卡记录为 CSV 格式"""
+    user_id = get_current_user_id()
+    if user_id is None:
+        return jsonify({'code': 401, 'message': '未登录'}), 401
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT username FROM users WHERE id = ?', (user_id,))
+    user_row = c.fetchone()
+    username = normalize_username(user_row['username']) if user_row else 'user'
+    c.execute('SELECT record_time, duration_minutes, shape, color, location FROM checkin_logs WHERE user_id = ? ORDER BY record_time DESC', (user_id,))
+    rows = c.fetchall()
+    conn.close()
+
+    import io
+    output = io.StringIO()
+    output.write('﻿')  # BOM for Excel
+    output.write('打卡时间,耗时(分钟),形态,颜色,地点\n')
+    SHAPE_MAP = {'perfect': '完美', 'soft': '稀软', 'dry': '干燥'}
+    COLOR_MAP = {'#A0522D': '深褐', '#C4A35A': '金黄', '#6B8E23': '绿色', '#D2691E': '橙褐', '#3B3B3B': '深黑', '#CD5C5C': '偏红'}
+    for row in rows:
+        rt = str(row['record_time'] or '').replace(',', ' ')
+        dur = str(row['duration_minutes'] or '')
+        shp = SHAPE_MAP.get(row['shape'], row['shape'] or '')
+        clr = COLOR_MAP.get((row['color'] or '').upper(), row['color'] or '')
+        loc = str(row['location'] or '').replace(',', '，')
+        output.write(f'{rt},{dur},{shp},{clr},{loc}\n')
+
+    from flask import Response
+    csv_data = output.getvalue()
+    output.close()
+    return Response(
+        csv_data,
+        mimetype='text/csv; charset=utf-8',
+        headers={'Content-Disposition': f'attachment; filename=LogIt_{username}.csv'}
+    )
 
 
 # ================================================================== #
