@@ -250,6 +250,48 @@ body::-webkit-scrollbar{display:none}
 .badge-unlock-modal{position:fixed;inset:0;background:rgba(93,64,55,.25);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:9999;padding:24px}
 .badge-unlock-modal.show{display:flex}
 .badge-unlock-card{background:linear-gradient(135deg,#FFFBF0,#FCF3CF,#FFDEE9);border:3px solid rgba(255,215,0,.5);border-radius:32px;padding:32px 24px;text-align:center;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(255,215,0,.25);animation:badge-pop .5s cubic-bezier(.17,.67,.35,1.2) both}
+
+/* v10: AI Weekly Report */
+@keyframes ai-glow{
+  0%,100%{box-shadow:0 0 12px 3px rgba(135,206,235,.3),0 0 24px 6px rgba(255,222,233,.2)}
+  50%{box-shadow:0 0 20px 6px rgba(135,206,235,.5),0 0 40px 12px rgba(255,222,233,.35)}
+}
+.ai-report-btn{
+  width:100%;padding:14px 20px;border:none;border-radius:9999px;
+  background:linear-gradient(135deg,#87CEEB,#E8B4B8,#FFD700);background-size:200% 200%;
+  animation:ai-glow 3s ease-in-out infinite;
+  color:#fff;font-size:15px;font-weight:900;cursor:pointer;
+  font-family:'Quicksand',sans-serif;transition:transform .15s,opacity .15s;
+  text-shadow:0 1px 3px rgba(93,64,55,.2);
+}
+.ai-report-btn:active{transform:scale(.97);opacity:.9}
+.ai-report-btn:disabled{opacity:.5;cursor:not-allowed;animation:none}
+.ai-loading-mask{
+  position:fixed;inset:0;z-index:9998;
+  background:rgba(255,251,240,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;
+}
+.ai-loading-mask.show{display:flex}
+.ai-report-modal{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(93,64,55,.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;padding:18px;
+}
+.ai-report-modal.show{display:flex}
+.ai-report-card{
+  width:100%;max-width:420px;max-height:80vh;overflow:auto;
+  background:linear-gradient(160deg,#FFFBF0,#F0F8FF,#FFF0F5);
+  border:3px solid rgba(135,206,235,.5);border-radius:28px;
+  box-shadow:0 20px 60px rgba(135,206,235,.25);animation:sheetUp .25s ease-out both;
+}
+.ai-report-header{
+  position:sticky;top:0;z-index:1;
+  background:linear-gradient(135deg,rgba(135,206,235,.3),rgba(255,222,233,.3));
+  backdrop-filter:blur(6px);padding:16px 20px;
+  border-bottom:2px dashed rgba(135,206,235,.4);border-radius:26px 26px 0 0;text-align:center;
+}
+.ai-report-body{padding:18px 20px;font-size:14px;color:#5D4037;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.ai-report-footer{padding:12px 20px 20px;text-align:center}
 </style>
 </head>
 <body class="min-h-screen select-none">
@@ -317,6 +359,31 @@ body::-webkit-scrollbar{display:none}
     <div id="badgeUnlockName" class="text-base font-extrabold mt-2" style="color:#E88FAA"></div>
     <div id="badgeUnlockDesc" class="text-xs mt-2" style="color:#8D6E63"></div>
     <button onclick="closeBadgeUnlockPopup()" class="mt-5 px-8 py-2.5 rounded-full text-white font-bold text-sm shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#FFD700,#FFA500)">太棒了 ♡</button>
+  </div>
+</div>
+
+<!-- AI Loading Overlay -->
+<div id="aiLoadingMask" class="ai-loading-mask">
+  <div class="anim-float">
+    <img src="chiikawa_happy.png" class="h-20 w-20 rounded-full object-cover border-4 border-white shadow-lg" onerror="this.style.display='none'">
+  </div>
+  <p class="text-sm font-extrabold mt-4" style="color:#5D4037">🧠 智谱 AI 正在为您深度分析肠胃数据</p>
+  <p class="text-xs font-bold mt-2" style="color:#8D6E63">请稍候，马上就好… ♡</p>
+  <div class="anim-wiggle mt-3" style="font-size:24px">🔬</div>
+</div>
+
+<!-- AI Report Modal -->
+<div id="aiReportMask" class="ai-report-modal" onclick="if(event.target.id==='aiReportMask') closeAIReport()">
+  <div class="ai-report-card">
+    <div class="ai-report-header">
+      <div style="font-size:28px;margin-bottom:4px">🤖✨📊</div>
+      <h3 class="text-base font-extrabold" style="color:#5D4037">AI 肠道健康周报</h3>
+      <p class="text-[11px] font-semibold mt-1" style="color:#8D6E63">Powered by 智谱 GLM-4 ♡</p>
+    </div>
+    <div class="ai-report-body" id="aiReportContent">加载中…</div>
+    <div class="ai-report-footer">
+      <button onclick="closeAIReport()" class="px-8 py-2.5 rounded-full text-white font-bold text-sm shadow-lg active:scale-95 transition-transform" style="background:linear-gradient(135deg,#87CEEB,#B8D4E8)">知道了 ♡</button>
+    </div>
   </div>
 </div>
 
@@ -519,6 +586,13 @@ body::-webkit-scrollbar{display:none}
         <div id="adviceList" class="space-y-3">
           <p class="text-sm text-center py-8" style="color:#E8B4B8">切换到此页面后自动分析 ♡</p>
         </div>
+      </div>
+      <!-- v10: AI 周报入口 -->
+      <div class="text-center">
+        <button id="aiReportBtn" onclick="requestAIReport()" class="ai-report-btn">
+          ✨ 召唤 AI 生成本周健康报告
+        </button>
+        <p class="text-[11px] font-semibold mt-2" style="color:#8D6E63">由智谱 AI (GLM-4) 深度分析你的肠胃数据 ♡</p>
       </div>
       <div class="rounded-3xl p-5 shadow-sm" style="border:2px solid rgba(214,234,248,.9);background:rgba(240,248,255,.65)">
         <div class="flex items-center justify-between gap-3">
@@ -1946,8 +2020,52 @@ function renderLeaderboard(list) {
 }
 
 /* ==========================================================
- * Badge System (v9)
+ * AI Weekly Report (v10)
  * ========================================================== */
+
+async function requestAIReport() {
+  if (!currentUserId) { showToast('请先登录'); return; }
+  var btn = document.getElementById('aiReportBtn');
+  var loadingMask = document.getElementById('aiLoadingMask');
+  if (btn) btn.disabled = true;
+  if (loadingMask) loadingMask.classList.add('show');
+  try {
+    var resp = await fetch(API_BASE + '/report/weekly', {
+      headers: { 'X-User-Id': currentUserId }
+    });
+    var json = await resp.json();
+    if (loadingMask) loadingMask.classList.remove('show');
+    if (btn) btn.disabled = false;
+    if (json.code === 200 && json.report) {
+      showAIReport(json.report);
+    } else if (json.code === 200 && !json.report) {
+      showToast(json.message || '数据不足，无法生成周报');
+    } else {
+      showToast(json.message || 'AI 分析失败，请稍后再试');
+    }
+  } catch(e) {
+    if (loadingMask) loadingMask.classList.remove('show');
+    if (btn) btn.disabled = false;
+    console.error('requestAIReport:', e);
+    showToast('⚠️ 网络请求失败，请检查后端服务');
+  }
+}
+
+function showAIReport(reportText) {
+  var content = document.getElementById('aiReportContent');
+  var mask = document.getElementById('aiReportMask');
+  if (content) content.textContent = reportText;
+  if (mask) mask.classList.add('show');
+}
+
+function closeAIReport() {
+  var mask = document.getElementById('aiReportMask');
+  if (mask) mask.classList.remove('show');
+}
+
+/* ==========================================================
+ * Badge System (v9)
+ * ==========================================================*/
 var badgeData = [];
 var badgeCurrentCategory = 'all';
 var BADGE_CATEGORY_COLORS = {
